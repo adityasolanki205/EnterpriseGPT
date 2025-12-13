@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import { Upload, Send, FileText, User, Shield, Briefcase, Lock, LogOut } from 'lucide-react';
 import './App.css';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API_URL = "http://localhost:8000";
 
@@ -316,10 +318,18 @@ function ChatInterface({ messages, setMessages, portal, placeholder }) {
       <div className="chat-area">
         {messages.map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}>
-            {msg.text}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
           </div>
         ))}
-        {loading && <div className="message bot">Thinking...</div>}
+        {loading && (
+          <div className="message bot">
+            <div className="typing-indicator">
+              <div className="typing-dot"></div>
+              <div className="typing-dot"></div>
+              <div className="typing-dot"></div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 

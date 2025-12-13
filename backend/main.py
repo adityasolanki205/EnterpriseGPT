@@ -68,7 +68,9 @@ def load_and_process_document(file_path: str):
 
 # Global Vectorstore Initialization
 vectorstore = get_vectorstore()
-retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+retriever = vectorstore.as_retriever(
+    search_kwargs={"k": 20}
+)
 
 @app.get("/")
 def read_root():
@@ -107,7 +109,13 @@ history_store = {}
 async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
     try:
         def format_docs(docs):
-            return "\n\n".join(doc.page_content for doc in docs)
+            formatted = "\n\n".join(doc.page_content for doc in docs)
+            print("\n" + "=" * 50)
+            print(f"DEBUG: Retrieved {len(docs)} chunks for context:")
+            print("=" * 50)
+            print(formatted)
+            print("=" * 50 + "\n")
+            return formatted
 
         # --- Session handling ---
         session_id = "default"  # replace with real session/user id later
@@ -117,16 +125,20 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         chat_history = history_store[session_id]
 
         # --- System role based on portal ---
+        # --- System role based on portal ---
         if portal == "hr":
             system_prompt = (
                 "You are an expert HR Assistant. "
-                "Use the provided context to answer questions about candidates and internal documents.\n\n"
+                "Use the provided context to answer questions about candidates and internal documents comprehensively. "
+                "If the information is not found in the context, explicitly state that you don't know based on the documents.\n\n"
                 "Context:\n{context}"
             )
         else:
             system_prompt = (
                 "You are a helpful Employee Support Assistant. "
-                "Use the provided context to answer questions about company policies, leave, and benefits.\n\n"
+                "Use the provided context to answer questions about company policies, leave, and benefits in detail. "
+                "Provide complete information based on the context. "
+                "If the answer is not in the context, say you don't have that information.\n\n"
                 "Context:\n{context}"
             )
 
