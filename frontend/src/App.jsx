@@ -1,74 +1,397 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Upload, Send, FileText, User, Shield, Briefcase, Lock, LogOut } from 'lucide-react';
-import './App.css';
+import {
+  Send, User, Shield, LogOut, Plus, MessageSquare,
+  Paperclip, RefreshCw, Briefcase
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import './App.css';
 
 const API_URL = "http://localhost:8000";
 
 function App() {
   const [user, setUser] = useState(null); // { role: 'hr' | 'employee', username: string }
   const [activeTab, setActiveTab] = useState('employee');
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
 
-  if (!user) {
-    return <LoginPage onLogin={setUser} />;
-  }
+  // Initialize a default chat when logging in or when no chats exist
+  useEffect(() => {
+    if (user && chats.length === 0) {
+      createNewChat(user.role === 'hr' ? 'hr' : 'employee');
+    }
+  }, [user]);
 
-  // Handle Tab Switching with Permission Check
+  // Handle Tab Switching
   const handleTabSwitch = (tab) => {
     if (tab === 'hr' && user.role !== 'hr') {
-      alert("Access Denied: Only HR Administrators can access this portal.");
+      alert("Access Denied");
       return;
     }
     setActiveTab(tab);
   };
 
+  const createNewChat = (type) => {
+    const newChat = {
+      id: Date.now(),
+      title: 'New Chat',
+      type: type,
+      messages: [{
+        role: 'bot',
+        text: type === 'hr'
+          ? 'Hello Admin. Ask me about candidate resumes or policies.'
+          : 'Hi! How can I help you with leave, benefits, or office policies?'
+      }],
+      timestamp: new Date()
+    };
+    setChats(prev => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+  };
+
+  const updateChatMessages = (chatId, newMsg) => {
+    setChats(prev => prev.map(chat => {
+      if (chat.id === chatId) {
+        // Update title based on first user message if it's "New Chat"
+        let title = chat.title;
+        if (title === 'New Chat' && newMsg.role === 'user') {
+          title = newMsg.text.slice(0, 30) + (newMsg.text.length > 30 ? '...' : '');
+        }
+        return { ...chat, messages: [...chat.messages, newMsg], title };
+      }
+      return chat;
+    }));
+  };
+
+  const handleRestartChat = (chatId) => {
+    setChats(prev => prev.map(chat => {
+      if (chat.id === chatId) {
+        return {
+          ...chat,
+          messages: [{
+            role: 'bot',
+            text: chat.type === 'hr'
+              ? 'Hello Admin. Ask me about candidate resumes or policies.'
+              : 'Hi! How can I help you with leave, benefits, or office policies?'
+          }]
+        };
+      }
+      return chat;
+    }));
+  };
+
+  const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+
+  const fileInputRef = useRef(null);
+
+  // File Upload Logic for HR (Moved to App for Sidebar access)
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    if (!activeChatId) return;
+
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+
+    // Optimistic update using updateChatMessages directly
+    // checking if we have a valid chat first
+    const currentChat = chats.find(c => c.id === activeChatId);
+    if (!currentChat) return;
+
+    updateChatMessages(activeChatId, { role: 'user', text: `Uploaded ${files.length} document(s): ${files.map(f => f.name).join(', ')}` });
+
+    try {
+      const res = await axios.post(`${API_URL}/process-documents`, formData);
+      updateChatMessages(activeChatId, { role: 'bot', text: `✅ ${res.data.message}` });
+    } catch (err) {
+      updateChatMessages(activeChatId, { role: 'bot', text: "❌ Upload failed." });
+    }
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Filter chats based on active tab for Admin, or just show all for Employee (who only has one type)
+  // Actually, for Admin, showing both is confusing if tabs are "filters".
+  // Let's assume tabs toggle the "Main View" context.
+  // The sidebar list should probably filter by the Active Tab context to keep it clean.
+  const filteredChats = chats.filter(c => {
+    if (!user) return false;
+    if (user.role === 'employee') return true;
+    return c.type === activeTab;
+  });
+
+  const handleLogout = () => {
+    setUser(null);
+    setChats([]);
+    setActiveChatId(null);
+  };
+
+  if (!user) {
+    return <LoginPage onLogin={(u) => {
+      setUser(u);
+      setActiveTab(u.role === 'hr' ? 'hr' : 'employee');
+    }} />;
+  }
+
   return (
-    <div className="container">
-      <header>
-        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
-          <div style={{ textAlign: 'center' }}>
-            <h1>Enterprise GPT</h1>
-            <p>Internal Knowledge Base & Support Intelligence</p>
-          </div>
-          <div style={{ position: 'absolute', right: 0, top: '10%', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontWeight: 600, color: '#475569' }}>
-              {user.role === 'hr' ? '🛡️ Admin' : '👤 Employee'}
-            </span>
+    <div className="app-root">
+      {/* GLOBAL HEADER - Full Screen Width */}
+      <header className="global-header">
+        <h1 className="global-title">Enterprise GPT</h1>
+        {activeChatId && (
+          <button
+            onClick={() => handleRestartChat(activeChatId)}
+            style={{
+              position: 'absolute',
+              right: '2rem',
+              background: 'transparent',
+              border: '1px solid #e2e8f0',
+              cursor: 'pointer',
+              color: '#64748b',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+            title="Restart Chat"
+          >
+            <RefreshCw size={18} />
+          </button>
+        )}
+      </header>
+
+      <div className="app-layout">
+        {/* LEFT PANEL - SIDEBAR (25%) */}
+        <div className="left-panel">
+          {/* HR Portal Header (New Request) */}
+          {user.role === 'hr' && (
+            <div className="portal-header-container">
+              <div className="portal-icon-square">HR</div>
+              <div>
+                <div className="portal-title-text">HR Portal</div>
+                <div className="portal-subtitle-text">Authorised Access Only</div>
+              </div>
+            </div>
+          )}
+
+          {/* Employee Portal Header - Keeping consistent style or distinct?
+              User specifically requested changes for "HR Portal".
+              I'll keep Employee as a simpler header for now or match style.
+              Let's keep Employee as tab style for now to strictly follow "New HR portal..."
+              unless it looks terrible.
+              Actually, mixing styles is bad. Let's make Employee look decent too,
+              but maybe without the big square if not asked?
+              Let's stick to the prompt: modifies HR Portal.
+          */}
+          {user.role === 'employee' && (
+            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc' }}>
+              <button className="sidebar-tab-btn active" style={{ cursor: 'default' }}>
+                Employee Portal
+              </button>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="sidebar-actions">
             <button
-              onClick={() => setUser(null)}
-              className="logout-btn"
+              className="new-chat-btn"
+              onClick={() => createNewChat(activeTab)}
             >
-              <LogOut size={16} style={{ marginRight: 6, display: 'block' }} />
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/1237/1237946.png"
+                alt="New Chat"
+                style={{ width: 24, height: 24, opacity: 0.8 }}
+              />
+              New Chat
+            </button>
+
+          </div>
+
+          <div className="chat-history-header">Your chats</div>
+
+          {/* Chat List */}
+          <div className="chat-list">
+            {filteredChats.map(chat => (
+              <div
+                key={chat.id}
+                className={`chat-item ${activeChatId === chat.id ? 'active' : ''}`}
+                onClick={() => setActiveChatId(chat.id)}
+              >
+                <MessageSquare size={18} />
+                <span className="chat-item-title">{chat.title}</span>
+              </div>
+            ))}
+            {filteredChats.length === 0 && (
+              <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                No chats yet.
+              </div>
+            )}
+          </div>
+
+          {/* Logout Button (Bottom) */}
+          <div className="sidebar-footer">
+            <button className="logout-full-btn" onClick={handleLogout}>
+              <LogOut size={18} />
               Logout
             </button>
           </div>
         </div>
-      </header>
 
-      <div className="tabs">
-        {user.role === 'hr' && (
-          <button
-            className={`tab-btn hr-tab ${activeTab === 'hr' ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('hr')}
-          >
-            <Shield size={18} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} />
-            HR Admin Portal
-          </button>
+        {/* RIGHT PANEL - CHAT INTERFACE (75%) */}
+        <div className="right-panel">
+          {activeChat ? (
+            <ChatInterface
+              chat={activeChat}
+              onUpdateMessages={updateChatMessages}
+              user={user}
+            />
+          ) : (
+            <div className="empty-state">
+              <img
+                src="https://cdn-icons-png.flaticon.com/2040/2040504.png"
+                width="64" alt="Chat" style={{ opacity: 0.2, marginBottom: '1rem' }}
+              />
+              <h3>Select a chat to start messaging</h3>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatInterface({ chat, onUpdateMessages, user }) {
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chat.messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const newMsg = { role: 'user', text: input };
+    onUpdateMessages(chat.id, newMsg);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('message', input);
+      formData.append('portal', chat.type);
+
+      const res = await axios.post(`${API_URL}/chat`, formData);
+      onUpdateMessages(chat.id, { role: 'bot', text: res.data.response });
+    } catch (err) {
+      onUpdateMessages(chat.id, { role: 'bot', text: "Error connecting to server." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // File Upload Logic for HR
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+
+    // Optimistic update
+    onUpdateMessages(chat.id, { role: 'user', text: `Uploaded ${files.length} document(s): ${files.map(f => f.name).join(', ')}` });
+    setLoading(true);
+
+    try {
+      const res = await axios.post(`${API_URL}/process-documents`, formData);
+      onUpdateMessages(chat.id, { role: 'bot', text: `✅ ${res.data.message}` });
+    } catch (err) {
+      onUpdateMessages(chat.id, { role: 'bot', text: "❌ Upload failed." });
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="chat-container">
+      {/* Chat Header removed as requested, actions moved to global header */}
+
+      {/* Messages */}
+      <div className="messages-area">
+        {chat.messages.map((msg, idx) => (
+          <div key={idx} className={`message-bubble ${msg.role}`}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+          </div>
+        ))}
+        {loading && (
+          <div className="message-bubble bot">
+            <div className="typing">
+              <div className="dot"></div>
+              <div className="dot"></div>
+              <div className="dot"></div>
+            </div>
+          </div>
         )}
-
-        <button
-          className={`tab-btn employee-tab ${activeTab === 'employee' ? 'active' : ''}`}
-          onClick={() => handleTabSwitch('employee')}
-        >
-          <User size={18} style={{ marginRight: 8, verticalAlign: 'text-bottom' }} />
-          Employee Support
-        </button>
+        <div ref={messagesEndRef} />
       </div>
 
-      <div className="card">
-        {activeTab === 'hr' ? <HRPortal /> : <EmployeePortal user={user} />}
+      {/* Input Area */}
+      <div className="input-container">
+        <div className="input-wrapper">
+          <input
+            className="message-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder="Type a message..."
+            disabled={loading}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Upload Button - Next to Send */}
+            {chat.type === 'hr' && user.role === 'hr' && (
+              <>
+                <input
+                  type="file"
+                  multiple
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+                <button
+                  className="send-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  title="Upload Document"
+                  style={{ background: '#f1f5f9', color: '#64748b' }}
+                >
+                  <Paperclip size={18} />
+                </button>
+              </>
+            )}
+
+            <button
+              className="send-btn"
+              onClick={sendMessage}
+              disabled={!input.trim() || loading}
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+          AI can make mistakes. Verify important information.
+        </div>
       </div>
     </div>
   );
@@ -81,13 +404,12 @@ function LoginPage({ onLogin }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Mock Login Logic
     if (username.toLowerCase() === 'admin' && password === 'admin') {
       onLogin({ role: 'hr', username: 'Admin User' });
     } else if (username.toLowerCase() === 'user' && password === 'user') {
       onLogin({ role: 'employee', username: 'Standard User' });
     } else {
-      setError('Invalid credentials. Try admin/admin or user/user');
+      setError('Invalid credentials');
     }
   };
 
@@ -97,269 +419,78 @@ function LoginPage({ onLogin }) {
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
+      width: '100vw',
       background: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)'
     }}>
       <div style={{
         background: 'white',
         padding: '2.5rem',
-        borderRadius: '1rem',
-        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+        borderRadius: '1.5rem',
+        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
         width: '100%',
         maxWidth: '400px'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
-            background: '#eff6ff',
-            width: 60,
-            height: 60,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1rem',
-            color: '#2563eb'
+            background: '#eff6ff', width: 64, height: 64, borderRadius: '20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.5rem', color: '#2563eb'
           }}>
-            <Lock size={30} />
+            <Briefcase size={32} />
           </div>
           <h2 style={{
-            margin: 0,
-            fontFamily: "'Outfit', sans-serif",
+            margin: 0, fontFamily: "'Outfit', sans-serif",
             background: "linear-gradient(to right, #1e293b, #2563eb)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            fontWeight: 800
+            WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
+            fontWeight: 800, fontSize: '1.75rem'
           }}>Enterprise GPT</h2>
-          <p style={{ color: '#64748b', margin: '5px 0 0' }}>Sign in to Enterprise GPT</p>
+          <p style={{ color: '#64748b', margin: '0.5rem 0 0' }}>Internal AI Workspace</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500, color: '#475569' }}>Username</label>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: '#475569', fontSize: '0.9rem' }}>Username</label>
             <input
               type="text"
-              style={{ width: '93%', padding: '.75rem', borderRadius: '.5rem', border: '1px solid #cbd5e1' }}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="admin or user"
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 5, fontWeight: 500, color: '#475569' }}>Password</label>
+            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: '#475569', fontSize: '0.9rem' }}>Password</label>
             <input
               type="password"
-              style={{ width: '93%', padding: '.75rem', borderRadius: '.5rem', border: '1px solid #cbd5e1' }}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="admin or user"
+              placeholder="••••••••"
             />
           </div>
 
-          {error && <p style={{ color: '#ef4444', fontSize: '0.9rem', margin: 0 }}>{error}</p>}
+          {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
 
           <button
             type="submit"
-            className="btn-primary"
-            style={{ marginTop: '0.5rem' }}
+            style={{
+              marginTop: '0.5rem', background: '#2563eb', color: 'white',
+              border: 'none', padding: '0.875rem', borderRadius: '0.75rem',
+              fontWeight: 600, cursor: 'pointer', fontSize: '1rem',
+              transition: 'background 0.2s'
+            }}
           >
             Sign In
           </button>
-
-          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
-            <p>Demo Credentials:</p>
-            HR Admin: admin / admin<br />
-            Employee: user / user
-          </div>
         </form>
-      </div>
-    </div>
-  );
-}
 
-function HRPortal() {
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Hello Admin. I am ready to answer questions about candidate resumes or internal HR policies.' }
-  ]);
-
-  const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
-  };
-
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    const formData = new FormData();
-    files.forEach(file => formData.append('files', file));
-
-    try {
-      const res = await axios.post(`${API_URL}/process-documents`, formData);
-      alert(res.data.message);
-      setFiles([]);
-    } catch (err) {
-      alert("Upload failed");
-      console.error(err);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="sidebar">
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Briefcase size={20} /> Knowledge Base
-        </h3>
-        <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Upload resumes (PDF/DOCX) to update the vector database.</p>
-
-        <div className="upload-zone">
-          <input
-            type="file"
-            multiple
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-            id="file-upload"
-          />
-          <label htmlFor="file-upload" style={{ cursor: 'pointer', display: 'block' }}>
-            <Upload size={32} color="#94a3b8" />
-            <p style={{ margin: '10px 0 0', fontWeight: 500 }}>Click to select files</p>
-          </label>
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
+          <div style={{ marginBottom: 4 }}><strong>Admin:</strong> admin / admin</div>
+          <div><strong>Employee:</strong> user / user</div>
         </div>
-
-        {files.length > 0 && (
-          <div style={{ fontSize: '0.85rem' }}>
-            <strong>Selected:</strong>
-            <ul style={{ paddingLeft: 20, margin: '5px 0' }}>
-              {files.map((f, i) => <li key={i}>{f.name}</li>)}
-            </ul>
-          </div>
-        )}
-
-        <button
-          className="btn-primary"
-          onClick={handleUpload}
-          disabled={uploading || files.length === 0}
-          style={{ opacity: (uploading || files.length === 0) ? 0.7 : 1 }}
-        >
-          {uploading ? 'Processing...' : 'Upload Documents'}
-        </button>
-      </div>
-
-      <ChatInterface
-        messages={messages}
-        setMessages={setMessages}
-        portal="hr"
-        placeholder="Ask about a specific candidate..."
-      />
-    </>
-  );
-}
-
-function EmployeePortal() {
-  const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Hi! I can help you with leave policies, benefits, and office guidelines. What do you need help with?' }
-  ]);
-
-  return (
-    <>
-      <div className="sidebar">
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <User size={20} /> Employee Help
-        </h3>
-        <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Common Topics:</p>
-        <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-          <li>🏖️ Leave Policy</li>
-          <li>🏥 Health Insurance</li>
-          <li>💰 Payroll Dates</li>
-          <li>🏠 Remote Work</li>
-        </ul>
-      </div>
-
-      <ChatInterface
-        messages={messages}
-        setMessages={setMessages}
-        portal="employee"
-        placeholder="How do I apply for leave?"
-      />
-    </>
-  );
-}
-
-function ChatInterface({ messages, setMessages, portal, placeholder }) {
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const newMsg = { role: 'user', text: input };
-    setMessages(prev => [...prev, newMsg]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('message', input);
-      formData.append('portal', portal);
-
-      const res = await axios.post(`${API_URL}/chat`, formData);
-      setMessages(prev => [...prev, { role: 'bot', text: res.data.response }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', text: "Error connecting to server." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="main-content">
-      <div className="chat-area">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
-          </div>
-        ))}
-        {loading && (
-          <div className="message bot">
-            <div className="typing-indicator">
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="input-area">
-        <input
-          className="chat-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder={placeholder}
-        />
-        <button
-          onClick={sendMessage}
-          style={{
-            background: 'var(--primary)',
-            border: 'none',
-            width: 50,
-            borderRadius: '0.5rem',
-            color: 'white',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Send size={20} />
-        </button>
       </div>
     </div>
-  )
+  );
 }
 
 export default App;
