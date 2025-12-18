@@ -188,10 +188,12 @@ function App() {
               Let's stick to the prompt: modifies HR Portal.
           */}
           {user.role === 'employee' && (
-            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc' }}>
-              <button className="sidebar-tab-btn active" style={{ cursor: 'default' }}>
-                Employee Portal
-              </button>
+            <div className="portal-header-container">
+              <div className="portal-icon-square">EM</div>
+              <div>
+                <div className="portal-title-text">Employee Portal</div>
+                <div className="portal-subtitle-text">Authorised Access Only</div>
+              </div>
             </div>
           )}
 

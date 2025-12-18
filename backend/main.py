@@ -69,7 +69,7 @@ def load_and_process_document(file_path: str):
 # Global Vectorstore Initialization
 vectorstore = get_vectorstore()
 retriever = vectorstore.as_retriever(
-    search_kwargs={"k": 20}
+    search_kwargs={"k": 8}
 )
 
 @app.get("/")
@@ -108,6 +108,25 @@ history_store = {}
 @app.post("/chat")
 async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
     try:
+        def enforce_resume_format(answer: str) -> str:
+            required_sections = [
+                "**Skills**",
+                "**Total Experience**",
+                "**Companies Worked In**"
+            ]
+
+            if all(section in answer for section in required_sections):
+                return answer
+
+            # Fallback if model violates format
+            return (
+                "- **Skills**:\n"
+                "  - Not found in documents\n"
+                "- **Total Experience**:\n"
+                "  - Not found in documents\n"
+                "- **Companies Worked In**:\n"
+                "  - Not found in documents"
+            )
         def format_docs(docs):
             formatted = "\n\n".join(doc.page_content for doc in docs)
             print("\n" + "=" * 50)
@@ -125,11 +144,21 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         chat_history = history_store[session_id]
 
         # --- System role based on portal ---
-        # --- System role based on portal ---
         if portal == "hr":
             system_prompt = (
-                "You are an expert HR Assistant. "
-                "Use the provided context to answer questions about candidates and internal documents comprehensively. "
+                "When answering questions about a candidate's profile or resume, "
+                "you MUST respond ONLY in the following exact format and NOTHING ELSE:\n"
+                "- **Skills**:\n"
+                "  - skill 1\n"
+                "  - skill 2\n"
+                "- **Total Experience**:\n"
+                "  - X years\n"
+                "- **Companies Worked In**:\n"
+                "  - Company A\n"
+                "  - Company B\n\n"
+                "Rules:\n"
+                "- Do not add explanations\n"
+                "- Do not add headings outside this format\n"
                 "If the information is not found in the context, explicitly state that you don't know based on the documents.\n\n"
                 "Context:\n{context}"
             )
@@ -137,6 +166,10 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
             system_prompt = (
                 "You are a helpful Employee Support Assistant. "
                 "Use the provided context to answer questions about company policies, leave, and benefits in detail. "
+                "When answering questions about a candidate's profile or resume, strictly use the following format with bullet points:\n"
+                "- **Skills**: [List of skills]\n"
+                "- **Total Experience**: [Total experience duration]\n"
+                "- **Companies Worked In**: [List of previous companies]\n\n"
                 "Provide complete information based on the context. "
                 "If the answer is not in the context, say you don't have that information.\n\n"
                 "Context:\n{context}"
@@ -168,7 +201,7 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         )
         # --- Invoke chain ---
         answer = chain.invoke(message)
-
+        #answer = enforce_resume_format(answer)
         # --- Update chat history explicitly ---
         chat_history.add_user_message(message)
         chat_history.add_ai_message(answer)
