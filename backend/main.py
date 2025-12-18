@@ -16,6 +16,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.callbacks import StdOutCallbackHandler
 from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.output_parsers import JsonOutputParser
 
 # Load .env
 load_dotenv() 
@@ -146,21 +147,23 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         # --- System role based on portal ---
         if portal == "hr":
             system_prompt = (
-                "When answering questions about a candidate's profile or resume, "
-                "you MUST respond ONLY in the following exact format and NOTHING ELSE:\n"
-                "- **Skills**:\n"
-                "  - skill 1\n"
-                "  - skill 2\n"
-                "- **Total Experience**:\n"
-                "  - X years\n"
-                "- **Companies Worked In**:\n"
-                "  - Company A\n"
-                "  - Company B\n\n"
-                "Rules:\n"
-                "- Do not add explanations\n"
-                "- Do not add headings outside this format\n"
+                "You are an expert HR Assistant. "
+                "Use the provided context to answer questions about candidates.\n\n"
                 "If the information is not found in the context, explicitly state that you don't know based on the documents.\n\n"
                 "Context:\n{context}"
+                + """
+                    IMPORTANT:
+                    You must return ONLY valid JSON in the following format.
+                    Do not add explanations, markdown, or extra text.
+
+                    {{
+                    "employee_name": "Full name of the employee",
+                    "summary": "2–3 line professional summary based strictly on the resume",
+                    "skills": ["skill1", "skill2"],
+                    "total_experience": "X years",
+                    "companies_worked_in": ["Company A", "Company B"]
+                    }}
+                """
             )
         else:
             system_prompt = (
@@ -174,10 +177,10 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
                 "If the answer is not in the context, say you don't have that information.\n\n"
                 "Context:\n{context}"
             )
-
+        output_parser = JsonOutputParser()
         # --- LLM ---
         llm = ChatOpenAI(
-            model="gpt-3.5-turbo-0125",
+            model="gpt-4o-mini",
             temperature=0
         )
 
@@ -197,16 +200,30 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
             }
             | prompt
             | llm
-            | StrOutputParser()
+            | output_parser
         )
         # --- Invoke chain ---
         answer = chain.invoke(message)
+
+        formatted_answer = (
+            f"- **Name**:\n"
+            f"  - {answer.get('employee_name', 'Not found in documents')}\n"
+            f"- **Summary**:\n"
+            f"  - {answer.get('summary', 'Not found in documents')}\n"
+            "- **Skills**:\n"
+            + "\n".join(f"  - {s}" for s in answer.get("skills", []))
+            + "\n- **Total Experience**:\n"
+            f"  - {answer.get('total_experience', 'Not found in documents')}\n"
+            "- **Companies Worked In**:\n"
+            + "\n".join(f"  - {c}" for c in answer.get("companies_worked_in", []))
+        )
+
         #answer = enforce_resume_format(answer)
         # --- Update chat history explicitly ---
         chat_history.add_user_message(message)
-        chat_history.add_ai_message(answer)
+        chat_history.add_ai_message(formatted_answer)
 
-        return {"response": answer}
+        return {"response": formatted_answer}
 
     except Exception as e:
         print(f"Error in chat: {e}")
