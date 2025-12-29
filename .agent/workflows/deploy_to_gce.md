@@ -105,13 +105,14 @@ cd EnterpriseGPT
     Add configuration (adjust paths for your user name):
     ```ini
     [Unit]
-    Description=EnterpriseGPT Backend
+    Description=Enterprise GPT Backend
     After=network.target
 
     [Service]
-    User=your_username
-    WorkingDirectory=/home/your_username/EnterpriseGPT/backend
-    ExecStart=/home/your_username/EnterpriseGPT/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+    User=aditya_solanki205
+    WorkingDirectory=/home/aditya_solanki205/EnterpriseGPT/backend
+    EnvironmentFile=/home/aditya_solanki205/EnterpriseGPT/.env
+    ExecStart=/home/aditya_solanki205/EnterpriseGPT/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
     Restart=always
 
     [Install]
@@ -122,11 +123,13 @@ cd EnterpriseGPT
     sudo systemctl daemon-reload
     sudo systemctl start enterprisegpt-backend
     sudo systemctl enable enterprisegpt-backend
+    sudo systemctl status enterprisegpt-backend
     ```
 
 ## Step 7: Setup Frontend (React)
 
-1.  **Update API URL**:
+1.  **Update API URL**: 
+    ## Not required
     Before building, you must point the frontend to your VM's IP or Domain.
     Edit `frontend/src/App.jsx`:
     ```javascript
@@ -196,10 +199,32 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
         proxy_set_header X-Real-IP $remote_addr;
     }
     ```
-
     **Option B (Simple)**:
     Serve Frontend on Port 80, Backend on Port 8000.
     Just use the `location /` block above.
+
+    correct config
+    ```
+    server {
+        listen 80;
+        server_name <VM_EXTERNAL_IP_OR_DOMAIN>;
+
+        # Frontend
+        location / {
+            root /var/www/enterprisegpt;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+
+        location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    }
+    ```
+
 
     Enable the site:
     ```bash
