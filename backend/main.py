@@ -137,16 +137,6 @@ def extract_employee_name_from_filename(filename: str) -> str | None:
     print(last_name)    
     return f"{first_name.title()} {last_name.title()}"
 
-# def extract_employee_name(text: str) -> str | None:
-#     doc = nlp(text)
-
-#     names = [
-#         ent.text.strip()
-#         for ent in doc.ents
-#         if ent.label_ == "PERSON" and 1 < len(ent.text.split()) <= 3
-#     ]
-#     print(names)
-#     return names[0] if names else None
 # --- API Endpoints ---
 
 # Global Vectorstore Initialization
@@ -296,26 +286,6 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         )
         answer = chain.invoke(message)
         if is_resume:
-            # # -------- Resume Chain (JSON) --------
-            # prompt = ChatPromptTemplate.from_messages([
-            #     ("system", RESUME_PROMPT),
-            #     ("placeholder", "{chat_history}"),
-            #     ("human", "{question}")
-            # ])
-
-            # chain = (
-            #     {
-            #         "context": retriever | format_docs,
-            #         "question": RunnablePassthrough(),
-            #         "chat_history": lambda _: chat_history.messages,
-            #     }
-            #     | prompt
-            #     | llm
-            #     | JsonOutputParser()
-            # )
-
-            # answer = chain.invoke(message)
-
             response  = (
                         f"- **Name**:\n"
                         f"  - {answer.get('employee_name', 'Not found in documents')}\n"
@@ -329,24 +299,6 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
                         + "\n".join(f"  - {c}" for c in answer.get("companies_worked_in", []))
                         )
         else:
-            # -------- General QA Chain (Text) --------
-            # prompt = ChatPromptTemplate.from_messages([
-            #     ("system", GENERAL_PROMPT),
-            #     ("placeholder", "{chat_history}"),
-            #     ("human", "{question}")
-            # ])
-
-            # chain = (
-            #     {
-            #         "context": retriever | format_docs,
-            #         "question": RunnablePassthrough(),
-            #         "chat_history": lambda _: chat_history.messages,
-            #     }
-            #     | prompt
-            #     | llm
-            # )
-
-            #result = chain.invoke(message)
             response = answer
         print (response)
 
