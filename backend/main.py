@@ -8,8 +8,6 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-import spacy
-
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -42,7 +40,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 if not os.getenv("OPENAI_API_KEY"):
     print("WARNING: OPENAI_API_KEY is not set.")
 
-nlp = spacy.load("en_core_web_sm")
 
 # --- Helper Functions ---
 
