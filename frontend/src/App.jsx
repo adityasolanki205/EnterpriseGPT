@@ -394,6 +394,11 @@ function ChatInterface({ chat, onUpdateMessages, user }) {
         <div style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
           AI can make mistakes. Verify important information.
         </div>
+        {chat.type === 'hr' && (
+          <div style={{ textAlign: 'center', marginTop: '0.25rem', fontSize: '0.75rem', color: '#d97706' }}>
+            Warning: If resume is being uploaded it should be in word doc and firstname_lastname_date format
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,3 +11,4 @@ docx2txt
 python-docx
 python-dotenv
 tiktoken
+spacy
