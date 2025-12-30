@@ -43,9 +43,8 @@ Run the following commands in the SSH terminal to update the system and install 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3-pip python3-venv nodejs npm nginx git
-# Install a newer version of Node.js if needed (Optional, Ubuntu repo might be old)
-# curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-# sudo apt install -y nodejs
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 ```
 
 ## Step 5: Clone the Repository
@@ -53,7 +52,7 @@ Clone your project repository. Since your code is local, you might want to push 
 *Assuming you pushed to GitHub:*
 
 ```bash
-git clone https://github.com/your-username/EnterpriseGPT.git
+git clone https://github.com/adityasolanki205/EnterpriseGPT.git
 cd EnterpriseGPT
 ```
 
@@ -100,7 +99,7 @@ cd EnterpriseGPT
 6.  **Setup as a System Service (Keep it running)**:
     Create a systemd file:
     ```bash
-    sudo nano /etc/systemd/system/enterprisegpt-backend.service
+    sudo vi /etc/systemd/system/enterprisegpt-backend.service
     ```
     Add configuration (adjust paths for your user name):
     ```ini
@@ -159,7 +158,7 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
 
 1.  Create Nginx config:
     ```bash
-    sudo nano /etc/nginx/sites-available/enterprisegpt
+    sudo vi /etc/nginx/sites-available/enterprisegpt
     ```
 
 2.  Add configuration:
