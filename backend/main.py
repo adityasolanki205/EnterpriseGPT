@@ -17,11 +17,19 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers import StrOutputParser
+import spacy
 
 # Load .env
 load_dotenv() 
 
-app = FastAPI()
+#app = FastAPI()
+app = FastAPI(
+    title="Enterprise GPT",
+    root_path="/api",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 # Enable CORS
 app.add_middleware(
@@ -65,6 +73,8 @@ def load_and_process_document(file_path: str):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
     return splits
+
+nlp = spacy.load("en_core_web_sm")
 
 def extract_features(text: str) -> dict:
     text_l = text.lower()

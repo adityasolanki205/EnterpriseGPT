@@ -8,7 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './App.css';
 
-const API_URL = "http://localhost:8000";
+//const API_URL = "http://localhost:8000";
+const API_URL = "/api";
 
 function App() {
   const [user, setUser] = useState(null); // { role: 'hr' | 'employee', username: string }

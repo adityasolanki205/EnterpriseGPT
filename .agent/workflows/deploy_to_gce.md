@@ -74,9 +74,8 @@ cd EnterpriseGPT
 3.  **Install Python Dependencies**:
     ```bash
     pip install -r requirements.txt
+    python -m spacy download en_core_web_sm
     ```
-    *Note: If you don't have a `requirements.txt`, generate one locally using `pip freeze > requirements.txt` or manually install packages used in imports (`fastapi`, `uvicorn`, `python-dotenv`, `spacy`, `langchain`, `langchain-community`, `langchain-openai`, `langchain-chroma`, `pypdf`, `docx2txt`, `python-multipart`).* 
-    *Also run `python -m spacy download en_core_web_sm`.*
 
 4.  **Setup Environment Variables**:
     Create a `.env` file with your API keys.
@@ -206,21 +205,39 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
     ```
     server {
         listen 80;
-        server_name <VM_EXTERNAL_IP_OR_DOMAIN>;
+        server_name _;
 
-        # Frontend
+        # ---------- Frontend ----------
+        root /var/www/enterprisegpt;
+        index index.html;
+
         location / {
-            root /var/www/enterprisegpt;
-            index index.html;
-            try_files $uri $uri/ /index.html;
+           try_files $uri $uri/ /index.html;
         }
 
+        #ocation /api/ {
+        #roxy_pass http://127.0.0.1:8000/;
+        #roxy_set_header Host $host;
+        #roxy_set_header X-Real-IP $remote_addr;
+        #roxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        #
         location /api/ {
-        proxy_pass http://127.0.0.1:8000/;
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        }
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Required for FastAPI / WebSockets
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+    }
     }
     ```
 
