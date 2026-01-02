@@ -89,6 +89,7 @@ cd EnterpriseGPT
     Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
 5.  **Test Backend**:
+    Not to be done
     ```bash
     uvicorn main:app --host 0.0.0.0 --port 8000
     ```
@@ -161,51 +162,13 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
     ```
 
 2.  Add configuration:
-    ```nginx
-    server {
-        listen 80;
-        server_name <VM_EXTERNAL_IP_OR_DOMAIN>;
-
-        # Frontend
-        location / {
-            root /var/www/enterprisegpt;
-            index index.html;
-            try_files $uri $uri/ /index.html;
-        }
-
-        # Backend Proxy
-        # Proxy requests starting with /api/ to the backend (or direct proxy if app expects root)
-        # Since backend is on /, and frontend consumes it, we can proxy specific paths or just use a different port.
-        # Simplest approach if `API_URL` is set to `http://<IP>:8000`: You don't need this block.
-        # But for professional setup (single port 80):
-        
-        # If your App.jsx uses specific endpoints like /chat, /process-documents, etc.
-        # You might want to prefix them or just use port 8000 context.
-        # For simplicity in this guide, we assume you opened port 8000 in Step 2 
-        # and kept API_URL pointing to port 8000.
-    }
-    ```
     
-    **Option A (Professional - Single Port 80)**:
-    If you change `API_URL` in frontend to `/api` (relative path) or `http://<IP>/api`, you need to configure Nginx to rewrite `/api` to `/`.
-    
-    ```nginx
-    location /api/ {
-        rewrite ^/api/(.*) /$1 break;
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-    ```
-    **Option B (Simple)**:
-    Serve Frontend on Port 80, Backend on Port 8000.
-    Just use the `location /` block above.
-
-    correct config
     ```
     server {
         listen 80;
         server_name _;
+        
+        client_max_body_size 50M;
 
         # ---------- Frontend ----------
         root /var/www/enterprisegpt;
@@ -215,12 +178,6 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
            try_files $uri $uri/ /index.html;
         }
 
-        #ocation /api/ {
-        #roxy_pass http://127.0.0.1:8000/;
-        #roxy_set_header Host $host;
-        #roxy_set_header X-Real-IP $remote_addr;
-        #roxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        #
         location /api/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
@@ -254,3 +211,25 @@ Configure Nginx to serve the frontend and proxy API requests to the backend.
 1.  Open `http://<VM_EXTERNAL_IP>` in your browser.
 2.  You should see the React app.
 3.  Upload a document or chat to test backend connectivity.
+
+
+#Restart Backend Service
+
+sudo systemctl stop enterprisegpt-backend
+sudo systemctl status enterprisegpt-backend
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl start enterprisegpt-backend
+sudo systemctl status enterprisegpt-backend
+
+
+# curl commands to test:
+curl http://127.0.0.1:8000/docs
+curl -X POST http://127.0.0.1:8000/chat -F "message=hello" -F "portal=employee"
+curl http://localhost/api/chat -F "message=hello" -F "portal=employee"
+
+
+# restart frontend: 
+sudo nginx -t
+sudo systemctl reload nginx
+

@@ -18,6 +18,7 @@ from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers import StrOutputParser
 import spacy
+from google.cloud import storage
 
 # Load .env
 load_dotenv() 
@@ -43,6 +44,7 @@ app.add_middleware(
 # Configuration
 UPLOAD_DIR = "uploaded_docs"
 VECTOR_DB_DIR = "chroma_db"
+GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 if not os.getenv("OPENAI_API_KEY"):
@@ -58,6 +60,21 @@ def get_vectorstore():
         embedding_function=embeddings
     )
 
+def upload_to_gcs(source_file_path: str, destination_blob_name: str):
+    """Uploads a file to the bucket."""
+    if not GCS_BUCKET_NAME:
+        print("Skipping GCS upload: GCS_BUCKET_NAME not set.")
+        return
+
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_filename(source_file_path)
+        print(f"File {source_file_path} uploaded to {destination_blob_name}.")
+    except Exception as e:
+        print(f"Failed to upload to GCS: {e}")
+
 def load_and_process_document(file_path: str):
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":
@@ -70,7 +87,7 @@ def load_and_process_document(file_path: str):
         return []
     
     docs = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=400)
     splits = text_splitter.split_documents(docs)
     return splits
 
@@ -88,9 +105,14 @@ def extract_features(text: str) -> dict:
             "experience", "education", "skills", "projects", "certification"
         ]),
         "policy_sections": sum(s in text_l for s in [
-            "policy", "scope", "guidelines", "compliance", "procedure"
-        ]),
-        "modal_verbs": sum(v in text_l for v in ["must", "shall", "required"])
+            "policy", "scope", "objective", "purpose",
+            "guidelines", "compliance", "procedure",
+            "applicability", "responsibility",
+            "governance", "effective date", "revision",
+            "approval", "authority", "definitions"
+            ]),
+        "modal_verbs": sum(v in text_l for v in ["must", "shall", "required","may not", "prohibited"]),
+        "governance_terms": sum(t in text_l for t in ["act", "law", "regulation", "iso", "government", "ministry"]),
     }
 
     doc = nlp(text)
@@ -119,6 +141,7 @@ def classify_document(text: str) -> str:
         f["policy_sections"] * 2 +
         f["modal_verbs"] * 2 +
         f["org_entities"] +
+        f["governance_terms"] * 3 +
         (3 if f["bullets"] == 0 else 0)
     )
     print(policy_score)
@@ -167,6 +190,7 @@ async def process_documents(files: List[UploadFile] = File(...)):
                 shutil.copyfileobj(file.file, buffer)
             
             docs = load_and_process_document(file_path)
+            print (docs)
             if not docs:
                 continue
 
@@ -176,7 +200,9 @@ async def process_documents(files: List[UploadFile] = File(...)):
             #employee_name = extract_employee_name(sample_text) if doc_type == "resume" else None
             employee_name = extract_employee_name_from_filename(file.filename)
             print(doc_type)
-            print(employee_name)   
+            print(employee_name)  
+            upload_to_gcs(file_path, f"{doc_type}/{file.filename}") 
+
             for d in docs:
                 d.metadata.update({
                     "doc_type": doc_type,
@@ -196,6 +222,7 @@ async def process_documents(files: List[UploadFile] = File(...)):
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+        
 def get_all_employee_names() -> set[str]:
     results = vectorstore.get(include=["metadatas"])
     names = set()
@@ -225,7 +252,7 @@ If the information is not found in the context, explicitly state that you don't 
 Context:\n{context}
 IMPORTANT:
 You must return ONLY valid JSON in the following format.
-Do not add explanations, markdown, or extra text.
+Do NOT add markdown, explanations, bullet points, or any text outside the JSON object.
 
 {{
 "employee_name": "Full name of the employee",
@@ -236,10 +263,15 @@ Do not add explanations, markdown, or extra text.
 }}
 """
 
-GENERAL_PROMPT = """
-You are a helpful assistant.
-Answer the user's question using the provided context when relevant.
-If the answer is not in the context, say so honestly.
+POLICY_PROMPT = """
+You are an HR Policy Assistant.
+
+Answer the user's question strictly using the provided context.
+• If the context lists types (e.g., Public Holidays, Restricted Holidays), enumerate them.
+• If numeric counts are explicitly mentioned, extract and report them clearly.
+• If counts vary yearly or are not defined, explicitly state that the document does not specify fixed counts.
+• If numbers appear near holiday descriptions, prioritize extracting them.
+• Do NOT infer, assume, or hallucinate numbers.
 
 Context:
 {context}
@@ -270,10 +302,10 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
         )
         print (is_resume)
         if is_resume:
-            system_prompt = RESUME_PROMPT   # must enforce JSON
+            system_prompt = RESUME_PROMPT
             output_parser = JsonOutputParser()
         else:
-            system_prompt = GENERAL_PROMPT    # NO JSON instruction
+            system_prompt = POLICY_PROMPT
             output_parser = StrOutputParser()
         prompt = ChatPromptTemplate.from_messages([
                     ("system", system_prompt),
