@@ -189,7 +189,7 @@ vectorstore = get_vectorstore()
 
 @app.get("/")
 def read_root():
-    return {"message": "Enterprise GPT API is running"}
+    return {"message": "Enterprise GPT API (Remote DB) is running"}
 
 @app.post("/process-documents")
 async def process_documents(files: List[UploadFile] = File(...)):
@@ -225,7 +225,7 @@ async def process_documents(files: List[UploadFile] = File(...)):
             processed_count += 1
         
         if all_chunks:
-            vectorstore.add_documents(all_chunks) # Use global vectorstore 
+            vectorstore.add_documents(all_chunks) # Use global vectorstore (remote)
             
         return {
             "status": "success", 

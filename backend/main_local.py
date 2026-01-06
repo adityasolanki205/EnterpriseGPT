@@ -20,8 +20,6 @@ from langchain_core.output_parsers import StrOutputParser
 import spacy
 from google.cloud import storage
 
-import chromadb # Added for HttpClient
-
 # Load .env
 load_dotenv() 
 
@@ -45,13 +43,9 @@ app.add_middleware(
 
 # Configuration
 UPLOAD_DIR = "uploaded_docs"
-# VECTOR_DB_DIR = "chroma_db" # Not used for remote connection
+VECTOR_DB_DIR = "chroma_db"
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-# Remote ChromaDB Configuration
-CHROMA_SERVER_HOST = os.getenv("CHROMA_SERVER_HOST", "localhost") # Replace with VM IP
-CHROMA_SERVER_PORT = int(os.getenv("CHROMA_SERVER_PORT", 8001))
 
 if not os.getenv("OPENAI_API_KEY"):
     print("WARNING: OPENAI_API_KEY is not set.")
@@ -61,18 +55,10 @@ if not os.getenv("OPENAI_API_KEY"):
 
 def get_vectorstore():
     embeddings = OpenAIEmbeddings()
-    # Connect to the remote ChromaDB server running on the separate VM
-    # The server should be started using chroma_server_deploy.py
-    try:
-        client = chromadb.HttpClient(host=CHROMA_SERVER_HOST, port=CHROMA_SERVER_PORT)
-        return Chroma(
-            client=client,
-            embedding_function=embeddings,
-            collection_name="langchain" # Default collection name
-        )
-    except Exception as e:
-        print(f"Failed to connect to ChromaDB at {CHROMA_SERVER_HOST}:{CHROMA_SERVER_PORT}. Error: {e}")
-        raise e
+    return Chroma(
+        persist_directory=VECTOR_DB_DIR, 
+        embedding_function=embeddings
+    )
 
 def upload_to_gcs(source_file_path: str, destination_blob_name: str):
     """Uploads a file to the bucket."""
@@ -184,7 +170,6 @@ def extract_employee_name_from_filename(filename: str) -> str | None:
 # --- API Endpoints ---
 
 # Global Vectorstore Initialization
-# Note: This will attempt to connect on startup. Ensure the remote server is running.
 vectorstore = get_vectorstore()
 
 @app.get("/")
@@ -225,7 +210,7 @@ async def process_documents(files: List[UploadFile] = File(...)):
             processed_count += 1
         
         if all_chunks:
-            vectorstore.add_documents(all_chunks) # Use global vectorstore 
+            vectorstore.add_documents(all_chunks) # Use global vectorstore
             
         return {
             "status": "success", 

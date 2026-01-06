@@ -233,3 +233,92 @@ curl http://localhost/api/chat -F "message=hello" -F "portal=employee"
 sudo nginx -t
 sudo systemctl reload nginx
 
+
+
+Chroma db setup:
+sudo vi /etc/systemd/system/chroma.service
+
+[Unit]
+Description=Chroma Vector Database Service
+After=network.target
+
+[Service]
+Type=simple
+User=aditya_solanki205
+WorkingDirectory=/home/aditya_solanki205/EnterpriseGPT/backend/chroma
+
+ExecStart=/home/aditya_solanki205/EnterpriseGPT/backend/venv/bin/chroma run \
+  --host 0.0.0.0 \
+  --port 8001 \
+  --path /var/lib/chroma
+
+Restart=always
+RestartSec=5
+
+Environment=PYTHONUNBUFFERED=1
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable chroma
+sudo systemctl start chroma
+
+
+
+sudo mkdir -p /opt/chroma
+sudo mkdir -p /var/lib/chroma
+sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma
+
+cd /opt/chroma
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install chromadb
+
+sudo vi /etc/systemd/system/chroma.service
+
+[Unit]
+Description=Chroma Vector Database Service
+After=network.target
+
+[Service]
+Type=simple
+User=aditya_solanki205
+WorkingDirectory=/opt/chroma
+
+ExecStart=/opt/chroma/venv/bin/chroma run \
+  --host 0.0.0.0 \
+  --port 8001 \
+  --path /var/lib/chroma
+
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl restart chroma
+
+sudo -u aditya_solanki205 ls /opt/chroma
+sudo -u aditya_solanki205 ls /var/lib/chroma
+
+ss -lntp | grep 8001
+journalctl -u chroma -n 100 --no-pager
+
+curl -v http://<VM_internal_IP>:8001
+
+sudo chown -R aditya_solanki205:aditya_solanki205 /var/lib/chroma
+sudo chmod 755 /var/lib/chroma
+
+
