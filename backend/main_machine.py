@@ -86,8 +86,10 @@ def upload_to_gcs(source_file_path: str, destination_blob_name: str):
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(source_file_path)
         print(f"File {source_file_path} uploaded to {destination_blob_name}.")
+        return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{destination_blob_name}"
     except Exception as e:
         print(f"Failed to upload to GCS: {e}")
+        return None 
 
 def load_and_process_document(file_path: str):
     ext = os.path.splitext(file_path)[1].lower()
@@ -213,13 +215,14 @@ async def process_documents(files: List[UploadFile] = File(...)):
             employee_name = extract_employee_name_from_filename(file.filename)
             print(doc_type)
             print(employee_name)  
-            upload_to_gcs(file_path, f"{doc_type}/{file.filename}") 
-
+            gcs_link = upload_to_gcs(file_path, f"{doc_type}/{file.filename}") 
+            print(gcs_link)
             for d in docs:
                 d.metadata.update({
                     "doc_type": doc_type,
                     "employee_name": employee_name,
-                    "source_file": file.filename    
+                    "source_file": file.filename,
+                    "gcs_link": gcs_link
                 })
             all_chunks.extend(docs)
             processed_count += 1
@@ -271,7 +274,8 @@ Do NOT add markdown, explanations, bullet points, or any text outside the JSON o
 "summary": "2–3 line professional summary based strictly on the resume",
 "skills": ["skill1", "skill2"],
 "total_experience": "X years",
-"companies_worked_in": ["Company A", "Company B"]
+"companies_worked_in": ["Company A", "Company B"],
+"resume_link": "The source link provided in the context"
 }}
 """
 
@@ -283,6 +287,7 @@ Answer the user's question strictly using the provided context.
 • If numeric counts are explicitly mentioned, extract and report them clearly.
 • If counts vary yearly or are not defined, explicitly state that the document does not specify fixed counts.
 • If numbers appear near holiday descriptions, prioritize extracting them.
+• If the context provides a source link, include it in the response.
 • Do NOT infer, assume, or hallucinate numbers.
 
 Context:
@@ -293,7 +298,12 @@ Context:
 async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
     try:
         def format_docs(docs):
-            formatted = "\n\n".join(doc.page_content for doc in docs)
+            formatted_chunks = []
+            for doc in docs:
+                content = doc.page_content
+                link = doc.metadata.get("gcs_link", "N/A")
+                formatted_chunks.append(f"Content: {content}\nSource Link: {link}")
+            formatted = "\n\n".join(formatted_chunks)
             print("\n" + "=" * 50)
             print(f"DEBUG: Retrieved {len(docs)} chunks for context:")
             print("=" * 50)
@@ -360,6 +370,8 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
                         f"  - {answer.get('total_experience', 'Not found in documents')}\n"
                         "- **Companies Worked In**:\n"
                         + "\n".join(f"  - {c}" for c in answer.get("companies_worked_in", []))
+                        + "\n- **Download Resume**:\n" 
+                        + f"  - [Click here to download]({answer.get('resume_link', '#')})\n"
                         )
         else:
             response = answer

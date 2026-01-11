@@ -320,5 +320,3 @@ curl -v http://<VM_internal_IP>:8001
 
 sudo chown -R aditya_solanki205:aditya_solanki205 /var/lib/chroma
 sudo chmod 755 /var/lib/chroma
-
-

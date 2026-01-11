@@ -3,7 +3,7 @@ import subprocess
 import sys
 import argparse
 
-def run_chroma_server(host: str = "0.0.0.0", port: int = 8001, persist_directory: str = "chroma_db_storage"):
+def run_chroma_server(host: str = "0.0.0.0", port: int = 8001, persist_directory: str = "chroma_db"):
     """
     Starts the ChromaDB server using the 'chroma run' command.
     This script should be deployed and run on the separate Virtual Machine.
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run ChromaDB Server on a Remote VM")
     parser.add_argument("--host", default="0.0.0.0", help="Host interface to bind to (0.0.0.0 for all interfaces)")
     parser.add_argument("--port", type=int, default=8001, help="Port to listen on (default: 8001)")
-    parser.add_argument("--path", default="chroma_db_storage", help="Path to local storage directory on the VM")
+    parser.add_argument("--path", default="chroma_db", help="Path to local storage directory on the VM")
     
     args = parser.parse_args()
     
