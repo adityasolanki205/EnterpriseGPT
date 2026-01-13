@@ -320,3 +320,109 @@ curl -v http://<VM_internal_IP>:8001
 
 sudo chown -R aditya_solanki205:aditya_solanki205 /var/lib/chroma
 sudo chmod 755 /var/lib/chroma
+
+Table : enterprisegpt.employee_data
+Table Schema
+
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "department",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "is_on_bench",
+        "type": "BOOLEAN",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "bench_start_date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "project_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "allocation_pct",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "last_updated_at",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    }
+]
+
+INSERT INTO `solar-dialect-264808.enterprisegpt.employee_data`
+(
+    id,
+    name,
+    department,
+    is_on_bench,
+    bench_start_date,
+    project_id,
+    allocation_pct,
+    last_updated_at
+)
+VALUES
+-- Employee 1: On Bench
+(
+    'E001',
+    'Aditya Solanki',
+    'Engineering',
+    TRUE,
+    DATE '2025-01-10',
+    NULL,
+    0,
+    CURRENT_DATE()
+),
+
+-- Employee 2: Fully Allocated
+(
+    'E002',
+    'Pratibha Singh',
+    'Data',
+    FALSE,
+    NULL,
+    'PRJ-101',
+    100,
+    CURRENT_DATE()
+),
+
+-- Employee 3: Partially Allocated
+(
+    'E003',
+    'Rahul Verma',
+    'Engineering',
+    FALSE,
+    NULL,
+    'PRJ-102',
+    50,
+    CURRENT_DATE()
+),
+
+-- Employee 4: Recently on Bench
+(
+    'E004',
+    'Vikram Bhatt',
+    'QA',
+    TRUE,
+    DATE '2025-02-01',
+    NULL,
+    0,
+    CURRENT_DATE()
+);
