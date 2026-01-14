@@ -74,6 +74,87 @@ def get_vectorstore():
         print(f"Failed to connect to ChromaDB at {CHROMA_SERVER_HOST}:{CHROMA_SERVER_PORT}. Error: {e}")
         raise e
 
+def get_bigquery_db():
+    return SQLDatabase.from_uri(
+        "bigquery://solar-dialect-264808/enterprisegpt",
+        include_tables=["employee_data"], 
+        sample_rows_in_table_info=2
+    )
+
+
+def get_sql_chain():
+    llm = ChatOpenAI(
+        model="gpt-4.1",
+        temperature=0
+    )
+
+    db = get_bigquery_db()
+
+    return SQLDatabaseChain.from_llm(
+        llm=llm,
+        db=db,
+        verbose=True,
+        return_intermediate_steps=True,  # lets you see generated SQL
+        use_query_checker=True
+    )
+
+def fetch_bench_via_langchain(user_prompt: str):
+    sql_chain = get_sql_chain()
+
+    result = sql_chain(user_prompt)
+
+    # Extract executed SQL result
+    rows = result["result"]
+
+    return rows
+
+def fetch_resume_links_for_bench(bench_names: set[str]):
+    resume_links = {}
+
+    for name in bench_names:
+        results = vectorstore.get(
+            where={
+                "doc_type": "resume",
+                "employee_name": name
+            },
+            include=["metadatas"]
+        )
+
+        for meta in results.get("metadatas", []):
+            if meta and meta.get("gcs_link"):
+                resume_links[name] = meta["gcs_link"]
+                break
+
+    return resume_links
+
+def langchain_bench_with_resumes(prompt: str):
+    bench_rows = fetch_bench_via_langchain(prompt)
+
+    bench_names = {row["employee_name"] for row in bench_rows}
+    resume_links = fetch_resume_links_for_bench(bench_names)
+
+    final = []
+    for row in bench_rows:
+        final.append({
+            "employee_name": row["employee_name"],
+            "bench_since": row["bench_start_date"],
+            "resume_link": resume_links.get(row["employee_name"], "Not available")
+        })
+
+    return final
+
+def is_bench_question(question: str) -> bool:
+    keywords = [
+        "bench",
+        "on bench",
+        "available employees",
+        "free employees",
+        "unallocated",
+        "not assigned to project"
+    ]
+    q = question.lower()
+    return any(k in q for k in keywords)
+
 def upload_to_gcs(source_file_path: str, destination_blob_name: str):
     """Uploads a file to the bucket."""
     if not GCS_BUCKET_NAME:
@@ -318,7 +399,21 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
 
         chat_history = history_store[session_id]
         is_resume = is_resume_question(message)
-        
+        if is_bench_question(message):
+            data = langchain_bench_with_resumes(message)
+
+            table = (
+            "| Name | On Bench Since | Resume Link |\n"
+            "|------|---------------|-------------|\n"
+            )
+
+            for r in data:
+                table += (
+                    f"| {r['employee_name']} | {r['bench_since']} | "
+                    f"[Download]({r['resume_link']}) |\n"
+                    )
+
+            return {"response": table}
         # Define filter based on question type
         if is_resume:
              filter_dict = {"doc_type": "resume"}
