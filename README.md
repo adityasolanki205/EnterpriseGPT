@@ -19,6 +19,8 @@ It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise da
 
 ## 🏗️ Architecture Overview
 
+![Enterprise](https://github.com/user-attachments/assets/36462ce6-1ac7-4afe-b920-bf726e759f4b)
+
 Frontend (Vue / React)
 |
 v
