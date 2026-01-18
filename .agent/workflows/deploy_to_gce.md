@@ -235,38 +235,7 @@ sudo systemctl reload nginx
 
 
 
-Chroma db setup:
-sudo vi /etc/systemd/system/chroma.service
-
-[Unit]
-Description=Chroma Vector Database Service
-After=network.target
-
-[Service]
-Type=simple
-User=aditya_solanki205
-WorkingDirectory=/home/aditya_solanki205/EnterpriseGPT/backend/chroma
-
-ExecStart=/home/aditya_solanki205/EnterpriseGPT/backend/venv/bin/chroma run \
-  --host 0.0.0.0 \
-  --port 8001 \
-  --path /var/lib/chroma
-
-Restart=always
-RestartSec=5
-
-Environment=PYTHONUNBUFFERED=1
-
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-
-
-sudo systemctl daemon-reload
-sudo systemctl enable chroma
-sudo systemctl start chroma
+Chroma DB setup
 
 
 

@@ -19,7 +19,6 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers import StrOutputParser
 import spacy
 from google.cloud import storage
-from google.cloud import bigquery
 
 import chromadb # Added for HttpClient
 
@@ -53,14 +52,10 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Remote ChromaDB Configuration
 CHROMA_SERVER_HOST = os.getenv("CHROMA_SERVER_HOST", "localhost") # Replace with VM IP
 CHROMA_SERVER_PORT = int(os.getenv("CHROMA_SERVER_PORT", 8001))
-PROJECT_ID = os.getenv("PROJECT_ID","solar-dialect-264808")
-DATASET = os.getenv("DATASET","enterprisegpt")
-TABLE = os.getenv("TABLE","employee_data")
-
-FULL_TABLE_NAME = f"`{PROJECT_ID}.{DATASET}.{TABLE}`"
 
 if not os.getenv("OPENAI_API_KEY"):
     print("WARNING: OPENAI_API_KEY is not set.")
+
 
 # --- Helper Functions ---
 
@@ -79,81 +74,6 @@ def get_vectorstore():
         print(f"Failed to connect to ChromaDB at {CHROMA_SERVER_HOST}:{CHROMA_SERVER_PORT}. Error: {e}")
         raise e
 
-
-def generate_sql(question: str) -> str:
-    llm = ChatOpenAI(
-        model="gpt-4.1",
-        temperature=0
-    )
-
-    chain = SQL_PROMPT | llm
-
-    sql = chain.invoke({
-        "question": question,
-        "FULL_TABLE_NAME": FULL_TABLE_NAME
-    }).content.strip()
-
-    return sql
-
-def run_bigquery(sql: str):
-    client = bigquery.Client(project=PROJECT_ID)
-    job = client.query(sql)
-    return [dict(row) for row in job.result()]
-
-def query_bench_employees(question: str):
-    sql = generate_sql(question)
-    print("Generated SQL:\n", sql)  # 🔍 debug / audit
-    return run_bigquery(sql)
-
-def fetch_resume_links_for_bench(bench_names: set[str]):
-    resume_links = {}
-
-    for name in bench_names:
-        results = vectorstore.get(
-            where={
-                "$and":[
-                    {"doc_type": "resume"},
-                    {"employee_name": name}
-                ]
-            },
-            include=["metadatas"]
-        )
-
-        for meta in results.get("metadatas", []):
-            if meta and meta.get("gcs_link"):
-                resume_links[name] = meta["gcs_link"]
-                break
-
-    return resume_links
-
-def langchain_bench_with_resumes(prompt: str):
-    bench_rows = query_bench_employees(prompt)
-
-    bench_names = {row["name"] for row in bench_rows}
-    resume_links = fetch_resume_links_for_bench(bench_names)
-
-    final = []
-    for row in bench_rows:
-        final.append({
-            "employee_name": row["name"],
-            "bench_since": row["bench_start_date"],
-            "resume_link": resume_links.get(row["name"], "Not available")
-        })
-
-    return final
-
-def is_bench_question(question: str) -> bool:
-    keywords = [
-        "bench",
-        "on bench",
-        "available employees",
-        "free employees",
-        "unallocated",
-        "not assigned to project"
-    ]
-    q = question.lower()
-    return any(k in q for k in keywords)
-
 def upload_to_gcs(source_file_path: str, destination_blob_name: str):
     """Uploads a file to the bucket."""
     if not GCS_BUCKET_NAME:
@@ -166,10 +86,8 @@ def upload_to_gcs(source_file_path: str, destination_blob_name: str):
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(source_file_path)
         print(f"File {source_file_path} uploaded to {destination_blob_name}.")
-        return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{destination_blob_name}"
     except Exception as e:
         print(f"Failed to upload to GCS: {e}")
-        return None 
 
 def load_and_process_document(file_path: str):
     ext = os.path.splitext(file_path)[1].lower()
@@ -271,7 +189,7 @@ vectorstore = get_vectorstore()
 
 @app.get("/")
 def read_root():
-    return {"message": "Enterprise GPT API (Remote DB) is running"}
+    return {"message": "Enterprise GPT API is running"}
 
 @app.post("/process-documents")
 async def process_documents(files: List[UploadFile] = File(...)):
@@ -295,20 +213,19 @@ async def process_documents(files: List[UploadFile] = File(...)):
             employee_name = extract_employee_name_from_filename(file.filename)
             print(doc_type)
             print(employee_name)  
-            gcs_link = upload_to_gcs(file_path, f"{doc_type}/{file.filename}") 
-            print(gcs_link)
+            upload_to_gcs(file_path, f"{doc_type}/{file.filename}") 
+
             for d in docs:
                 d.metadata.update({
                     "doc_type": doc_type,
                     "employee_name": employee_name,
-                    "source_file": file.filename,
-                    "gcs_link": gcs_link
+                    "source_file": file.filename    
                 })
             all_chunks.extend(docs)
             processed_count += 1
         
         if all_chunks:
-            vectorstore.add_documents(all_chunks) # Use global vectorstore (remote)
+            vectorstore.add_documents(all_chunks) # Use global vectorstore 
             
         return {
             "status": "success", 
@@ -354,8 +271,7 @@ Do NOT add markdown, explanations, bullet points, or any text outside the JSON o
 "summary": "2–3 line professional summary based strictly on the resume",
 "skills": ["skill1", "skill2"],
 "total_experience": "X years",
-"companies_worked_in": ["Company A", "Company B"],
-"resume_link": "The source link provided in the context"
+"companies_worked_in": ["Company A", "Company B"]
 }}
 """
 
@@ -367,40 +283,17 @@ Answer the user's question strictly using the provided context.
 • If numeric counts are explicitly mentioned, extract and report them clearly.
 • If counts vary yearly or are not defined, explicitly state that the document does not specify fixed counts.
 • If numbers appear near holiday descriptions, prioritize extracting them.
-• If the context provides a source link, include it in the response.
 • Do NOT infer, assume, or hallucinate numbers.
 
 Context:
 {context}
 """
 
-SQL_PROMPT = ChatPromptTemplate.from_template("""
-You are an HR analytics assistant.
-
-Write a BigQuery SELECT query ONLY.
-
-Rules:
-- ONLY SELECT queries
-- Use this table exactly: {FULL_TABLE_NAME}
-- Use column names exactly as they exist
-- Do NOT explain anything
-- Do NOT use markdown
-
-User question:
-{question}
-
-Return ONLY SQL.
-""")
 @app.post("/chat")
 async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
     try:
         def format_docs(docs):
-            formatted_chunks = []
-            for doc in docs:
-                content = doc.page_content
-                link = doc.metadata.get("gcs_link", "N/A")
-                formatted_chunks.append(f"Content: {content}\nSource Link: {link}")
-            formatted = "\n\n".join(formatted_chunks)
+            formatted = "\n\n".join(doc.page_content for doc in docs)
             print("\n" + "=" * 50)
             print(f"DEBUG: Retrieved {len(docs)} chunks for context:")
             print("=" * 50)
@@ -415,21 +308,7 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
 
         chat_history = history_store[session_id]
         is_resume = is_resume_question(message)
-        if is_bench_question(message):
-            data = langchain_bench_with_resumes(message)
-
-            table = (
-            "| Name | On Bench Since | Resume Link |\n"
-            "|------|---------------|-------------|\n"
-            )
-
-            for r in data:
-                table += (
-                    f"| {r['employee_name']} | {r['bench_since']} | "
-                    f"[Download]({r['resume_link']}) |\n"
-                    )
-
-            return {"response": table}
+        
         # Define filter based on question type
         if is_resume:
              filter_dict = {"doc_type": "resume"}
@@ -481,8 +360,6 @@ async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
                         f"  - {answer.get('total_experience', 'Not found in documents')}\n"
                         "- **Companies Worked In**:\n"
                         + "\n".join(f"  - {c}" for c in answer.get("companies_worked_in", []))
-                        + "\n- **Download Resume**:\n" 
-                        + f"  - [Click here to download]({answer.get('resume_link', '#')})\n"
                         )
         else:
             response = answer
