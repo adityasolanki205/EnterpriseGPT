@@ -19,6 +19,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers import StrOutputParser
 import spacy
 from google.cloud import storage
+from google.cloud import bigquery
 
 import chromadb # Added for HttpClient
 
@@ -52,10 +53,14 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Remote ChromaDB Configuration
 CHROMA_SERVER_HOST = os.getenv("CHROMA_SERVER_HOST", "localhost") # Replace with VM IP
 CHROMA_SERVER_PORT = int(os.getenv("CHROMA_SERVER_PORT", 8001))
+PROJECT_ID = os.getenv("PROJECT_ID","solar-dialect-264808")
+DATASET = os.getenv("DATASET","enterprisegpt")
+TABLE = os.getenv("TABLE","employee_data")
+
+FULL_TABLE_NAME = f"`{PROJECT_ID}.{DATASET}.{TABLE}`"
 
 if not os.getenv("OPENAI_API_KEY"):
     print("WARNING: OPENAI_API_KEY is not set.")
-
 
 # --- Helper Functions ---
 
@@ -74,39 +79,31 @@ def get_vectorstore():
         print(f"Failed to connect to ChromaDB at {CHROMA_SERVER_HOST}:{CHROMA_SERVER_PORT}. Error: {e}")
         raise e
 
-def get_bigquery_db():
-    return SQLDatabase.from_uri(
-        "bigquery://solar-dialect-264808/enterprisegpt",
-        include_tables=["employee_data"], 
-        sample_rows_in_table_info=2
-    )
 
-
-def get_sql_chain():
+def generate_sql(question: str) -> str:
     llm = ChatOpenAI(
         model="gpt-4.1",
         temperature=0
     )
 
-    db = get_bigquery_db()
+    chain = SQL_PROMPT | llm
 
-    return SQLDatabaseChain.from_llm(
-        llm=llm,
-        db=db,
-        verbose=True,
-        return_intermediate_steps=True,  # lets you see generated SQL
-        use_query_checker=True
-    )
+    sql = chain.invoke({
+        "question": question,
+        "FULL_TABLE_NAME": FULL_TABLE_NAME
+    }).content.strip()
 
-def fetch_bench_via_langchain(user_prompt: str):
-    sql_chain = get_sql_chain()
+    return sql
 
-    result = sql_chain(user_prompt)
+def run_bigquery(sql: str):
+    client = bigquery.Client(project=PROJECT_ID)
+    job = client.query(sql)
+    return [dict(row) for row in job.result()]
 
-    # Extract executed SQL result
-    rows = result["result"]
-
-    return rows
+def query_bench_employees(question: str):
+    sql = generate_sql(question)
+    print("Generated SQL:\n", sql)  # 🔍 debug / audit
+    return run_bigquery(sql)
 
 def fetch_resume_links_for_bench(bench_names: set[str]):
     resume_links = {}
@@ -114,8 +111,10 @@ def fetch_resume_links_for_bench(bench_names: set[str]):
     for name in bench_names:
         results = vectorstore.get(
             where={
-                "doc_type": "resume",
-                "employee_name": name
+                "$and":[
+                    {"doc_type": "resume"},
+                    {"employee_name": name}
+                ]
             },
             include=["metadatas"]
         )
@@ -128,17 +127,17 @@ def fetch_resume_links_for_bench(bench_names: set[str]):
     return resume_links
 
 def langchain_bench_with_resumes(prompt: str):
-    bench_rows = fetch_bench_via_langchain(prompt)
+    bench_rows = query_bench_employees(prompt)
 
-    bench_names = {row["employee_name"] for row in bench_rows}
+    bench_names = {row["name"] for row in bench_rows}
     resume_links = fetch_resume_links_for_bench(bench_names)
 
     final = []
     for row in bench_rows:
         final.append({
-            "employee_name": row["employee_name"],
+            "employee_name": row["name"],
             "bench_since": row["bench_start_date"],
-            "resume_link": resume_links.get(row["employee_name"], "Not available")
+            "resume_link": resume_links.get(row["name"], "Not available")
         })
 
     return final
@@ -375,6 +374,23 @@ Context:
 {context}
 """
 
+SQL_PROMPT = ChatPromptTemplate.from_template("""
+You are an HR analytics assistant.
+
+Write a BigQuery SELECT query ONLY.
+
+Rules:
+- ONLY SELECT queries
+- Use this table exactly: {FULL_TABLE_NAME}
+- Use column names exactly as they exist
+- Do NOT explain anything
+- Do NOT use markdown
+
+User question:
+{question}
+
+Return ONLY SQL.
+""")
 @app.post("/chat")
 async def chat_endpoint(message: str = Form(...), portal: str = Form(...)):
     try:
