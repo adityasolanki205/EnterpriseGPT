@@ -1,49 +1,173 @@
-# Enterprise GPT (React + FastAPI)
+# EnterpriseGPT
 
-A premium RAG-based application for Enterprise Knowledge Management, featuring separate portals for HR (Data Ingestion) and Employees (Support Chat).
+EnterpriseGPT is an **internal AI workspace** designed for mid-to-large organizations.  
+It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise data**, and **vector search** to answer HR, employee, and policy-related questions accurately and securely.
 
-## 🚀 How to Run
+---
 
-You will need two terminal windows to run the Frontend and Backend simultaneously.
+## 🚀 Key Features
 
-### 1. Start the Backend (FastAPI)
-This handles the document processing (LangChain/ChromaDB) and chat logic.
+- 🔍 Resume & Policy Search using RAG
+- 🧠 Hybrid AI Architecture (BigQuery + Chroma + LLM)
+- 🧑‍💼 Bench Employee Identification
+- 📄 Resume Metadata & Secure Resume Links
+- 📚 Policy Q&A from Uploaded Documents
+- 🏢 Separate HR and Employee Portals
+- ☁️ Cloud-native and GCP-ready deployment
+
+---
+
+## 🏗️ Architecture Overview
+
+Frontend (Vue / React)
+|
+v
+FastAPI Backend (EnterpriseGPT)
+|
+├── BigQuery (Structured Data)
+│ └── Employee status (bench / active)
+|
+├── Chroma Vector DB (Separate VM)
+│ ├── Resume embeddings
+│ └── Policy embeddings
+|
+├── Google Cloud Storage (GCS)
+│ └── Resume & policy documents
+|
+└── OpenAI / LLM
+└── Reasoning & summarization
+
+## 🧠 Data Ownership Model
+
+| Data Type | Source of Truth |
+|----------|----------------|
+Employee bench/active status | BigQuery |
+Employee basic details | BigQuery |
+Resume text & embeddings | Chroma |
+Resume download links | GCS |
+Policy documents | Chroma |
+Summaries & reasoning | LLM |
+
+> ❗ Structured data is **never** derived from LLMs.
+
+EnterpriseGPT/
+├── backend/
+│ ├── main.py
+│ ├── chroma_client.py
+│ ├── requirements.txt
+│ ├── venv/
+│ └── uploaded_docs/
+│
+├── frontend/
+│ ├── src/
+│ ├── build/
+│ └── package.json
+│
+├── chroma/
+│ ├── chroma.service
+│ └── data/ # /var/lib/chroma on VM
+│
+└── README.md
+
+## 🗄️ Vector Database (Chroma)
+
+- Runs on a **separate Debian VM**
+- Deployed as a **systemd service**
+- Accessed via HTTP from backend
+
+### Chroma Service Management
 
 ```bash
-cd enterprise_gpt_react
-# Install dependencies (first time only)
-pip install -r backend/requirements.txt
-
-# Run the server
-# Use this command if 'python' alias fails:
-& "C:\Users\hp\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe" backend/main.py
+sudo systemctl status chroma
+sudo systemctl restart chroma  
+sudo systemctl enable chroma 
 ```
-*Backend runs on `http://localhost:8000`*
 
-### 2. Start the Frontend (React)
-This launches the user interface.
+📄 Document Ingestion
+Supported Formats
 
-```bash
-cd enterprise_gpt_react/frontend
-# Install dependencies (first time only)
-npm install
+- PDF
 
-# Run the dev server
-npm run dev
+- DOCX
+
+- TXT
+
+Automatic Classification
+
+Documents are classified as:
+
+- Resume
+
+- Policy
+
+Classification is based on:
+
+- Structural patterns
+
+- Keywords
+
+- Entity recognition
+
+- Resume-specific indicators (email, phone, experience)
+
+Metadata Stored in Chroma
+```json
+{
+  "doc_type": "resume",
+  "employee_id": "E123",
+  "employee_name": "Aditya Solanki",
+  "resume_url": "https://storage.googleapis.com/..."
+}
 ```
-*Frontend runs on `http://localhost:5173`*
+👥 Bench Employee Workflow
 
-## 🔑 Login Credentials (Demo)
+Execution Flow
 
-*   **HR Admin Portal**:
-    *   Username: `admin`
-    *   Password: `admin`
-*   **Employee Support**:
-    *   Username: `user`
-    *   Password: `user`
+1. Fetch bench employees from BigQuery
 
-## 🛠️ Configuration
-Ensure you have a `.env` file in the root `LLM_Engineering_Learning` folder with your OpenAI API Key:
+2. Fetch resume metadata from Chroma
+
+3. Generate summaries using LLM
+
+4. Return structured JSON to frontend
+
+```json 
+{
+  "type": "bench_employee_list",
+  "count": 2,
+  "data": [
+    {
+      "employee_name": "Aditya Solanki",
+      "department": "Engineering",
+      "resume_url": "https://storage.googleapis.com/...",
+      "resume_summary": "Backend engineer with experience in Python and GCP."
+    }
+  ]
+}
 ```
-OPENAI_API_KEY=sk-...
-```
+🌐 API Endpoints
+
+| Endpoint                      | Description                 |
+| ----------------------------- | --------------------------- |
+| `POST /api/chat`              | Main chat endpoint          |
+| `POST /api/process-documents` | Upload resumes and policies |
+| `GET /api/docs`               | Swagger API documentation   |
+| `GET /api/health/chroma`      | Chroma connectivity check   |
+
+🖥️ Frontend
+
+- Built using Vue or React
+
+- Uses /api/* routes via Nginx reverse proxy
+
+- Supports:
+
+    - HR Portal
+
+    - Employee Portal
+
+    - Resume upload
+
+    - Bench employee table view
+
+
