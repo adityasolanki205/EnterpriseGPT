@@ -165,11 +165,35 @@ Execution Flow
 - Supports:
 
     - HR Portal
-
     - Employee Portal
-
     - Resume upload
-
     - Bench employee table view
 
+🚀 Deployment
+
+Backend
+```bash
+source venv/bin/activate
+sudo systemctl restart enterprisegpt-backend
+```
+
+Chroma
+```bash
+sudo systemctl restart chroma
+```
+
+Frontend
+```bash
+npm run build
+sudo cp -r build/* /var/www/enterprisegpt/
+sudo systemctl reload nginx
+```
+📌 Final Notes
+
+EnterpriseGPT follows enterprise AI best practices:
+
+- No hallucination for structured data
+- Clear data ownership
+- Scalable and auditable architecture
+- Cloud-native design
 
