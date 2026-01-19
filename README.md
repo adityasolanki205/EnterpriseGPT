@@ -17,6 +17,7 @@ It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise da
 
 ![EnterpriseGPT](https://github.com/user-attachments/assets/f9e512e1-949a-4969-b343-2fe6e10a6ddf)
 
+```
 Frontend (Vue / React)
 |
 v
@@ -34,6 +35,7 @@ FastAPI Backend (EnterpriseGPT)
 |
 └── OpenAI / LLM
 └── Reasoning & summarization
+```
 
 ## 🧠 Data Ownership Model
 
