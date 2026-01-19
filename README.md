@@ -302,7 +302,7 @@ Below are the steps to setup the enviroment and run the codes:
       ```
       
     -  Copy configuration in the opened file:
-      ```
+      ```bash
       server {
           listen 80;
           server_name _;
