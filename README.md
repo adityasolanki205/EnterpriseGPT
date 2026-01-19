@@ -15,7 +15,8 @@ It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise da
 
 ## Architecture Overview
 
-![EnterpriseGPT](https://github.com/user-attachments/assets/f9e512e1-949a-4969-b343-2fe6e10a6ddf)
+![EnterpriseGPT](https://github.com/user-attachments/assets/7bb8a27f-9e1a-4cad-bceb-b2711e59327c)
+
 
 1. **Types of Users** 
     - There are 2 types of Users. **Admin** and **Employee**.
