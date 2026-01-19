@@ -3,21 +3,17 @@
 EnterpriseGPT is an **internal AI workspace** designed for mid-to-large organizations.  
 It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise data**, and **vector search** to answer HR, employee, and policy-related questions accurately and securely.
 
----
+## Key Features
 
-## 🚀 Key Features
+- Resume & Policy Search using RAG
+- Hybrid AI Architecture (BigQuery + Chroma + LLM)
+- Bench Employee Identification
+- Resume Metadata & Secure Resume Links
+- Policy Q&A from Uploaded Documents
+- Separate HR and Employee Portals
+- Cloud-native and GCP-ready deployment
 
-- 🔍 Resume & Policy Search using RAG
-- 🧠 Hybrid AI Architecture (BigQuery + Chroma + LLM)
-- 🧑‍💼 Bench Employee Identification
-- 📄 Resume Metadata & Secure Resume Links
-- 📚 Policy Q&A from Uploaded Documents
-- 🏢 Separate HR and Employee Portals
-- ☁️ Cloud-native and GCP-ready deployment
-
----
-
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ![Enterprise](https://github.com/user-attachments/assets/36462ce6-1ac7-4afe-b920-bf726e759f4b)
 
@@ -52,6 +48,7 @@ Summaries & reasoning | LLM |
 
 > ❗ Structured data is **never** derived from LLMs.
 
+```
 EnterpriseGPT/
 ├── backend/
 │ ├── main.py
@@ -70,6 +67,7 @@ EnterpriseGPT/
 │ └── data/ # /var/lib/chroma on VM
 │
 └── README.md
+```
 
 ## 🗄️ Vector Database (Chroma)
 
