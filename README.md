@@ -230,39 +230,198 @@ Below are the steps to setup the enviroment and run the codes:
 
 ## Application setup:
 
-1. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup application:
+1. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup fastapi application:
     - Clone the repo using 
-    ```bash
-      git clone https://github.com/adityasolanki205/EnterpriseGPT.git
-    ```
+      ```bash
+        git clone https://github.com/adityasolanki205/EnterpriseGPT.git
+      ```
 
     - Goto the cloned repo
-    ```bash
-      cd EnterpriseGPT
-    ```
+      ```bash
+        cd EnterpriseGPT/backend
+      ```
 
     - Create a virtual environment and activate it
-    ```bash
-      python3 -m venv venv
-      source venv/bin/activate
-    ```
+      ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+      ```
 
     - Install the required dependencies
-    ```bash
-      pip install -r requirements.txt
-      python -m spacy download en_core_web_sm
-    ```
+      ```bash
+        pip install -r requirements.txt
+        python -m spacy download en_core_web_sm
+      ```
 
-    - Set the environment variables
-    ```bash
-      export CHROMA_API_KEY=your_chroma_api_key
-      export CHROMA_API_SECRET=your_chroma_api_secret
-    ```
-    
-    - Run the application
-    ```bash
-      python app.py
-    ```
+    - Set the environment variables at **/EnterpriseGPT/.env**
+      ```bash
+        OPENAI_API_KEY=<your_openai_api_key>
+        GCS_BUCKET_NAME=enterprisegpt_bucket
+        CHROMA_SERVER_HOST=<internal_chroma_VM_ip>
+        CHROMA_SERVER_PORT=8001
+        PROJECT_ID=<your_project_id>
+        DATASET="enterprisegpt"
+        TABLE="employee_data"
+      ```
+
+    - Setup as a System Service
+      ```bash
+      sudo vi /etc/systemd/system/enterprisegpt-backend.service
+      ```
+
+      Add configu ration (adjust paths for your user name):
+      ```ini
+        [Unit]
+        Description=Enterprise GPT Backend
+        After=network.target
+
+        [Service]
+        User=<username>
+        WorkingDirectory=/home/<username>/EnterpriseGPT/backend
+        EnvironmentFile=/home/<username>/EnterpriseGPT/.env
+        ExecStart=/home/<username>/EnterpriseGPT/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target
+      ```
+
+    - Start the service:
+      ```bash
+        sudo systemctl daemon-reexec
+        sudo systemctl daemon-reload
+        sudo systemctl start enterprisegpt-backend
+        sudo systemctl enable enterprisegpt-backend
+        sudo systemctl status enterprisegpt-backend
+      ```
+2. Now lets setup frontend. Follow below steps to setup React application:
+
+    - Setup as a System Service
+      ```bash
+        sudo vi /etc/nginx/sites-available/enterprisegpt
+      ```
+      
+    -  Copy configuration in the opened file:
+      ```
+        server {
+            listen 80;
+            server_name _;
+            
+            client_max_body_size 50M;
+
+            # ---------- Frontend ----------
+            root /var/www/enterprisegpt;
+            index index.html;
+
+            location / {
+              try_files $uri $uri/ /index.html;
+            }
+
+            location /api/ {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_http_version 1.1;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Required for FastAPI / WebSockets
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            proxy_read_timeout 300;
+            proxy_connect_timeout 300;
+            proxy_send_timeout 300;
+        }
+        }
+      ```
+
+    - Enable the site:
+      ```bash
+        sudo ln -s /etc/nginx/sites-available/enterprisegpt /etc/nginx/sites-enabled/
+        sudo rm /etc/nginx/sites-enabled/default
+        sudo nginx -t
+        sudo systemctl restart nginx
+      ```
+3. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
+
+    - Create required directories and set ownership
+      ```bash
+        sudo mkdir -p /opt/chroma
+        sudo mkdir -p /var/lib/chroma
+        sudo chown -R <username>:<username> /opt/chroma /var/lib/chroma        
+      ```
+
+    - Create a virtual environment and activate it
+      ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+      ```
+
+    - Install the required dependencies
+      ```bash
+        pip install --upgrade pip
+        pip install chromadb
+      ```
+
+    - Set the environment variables at **/EnterpriseGPT/.env**
+      ```bash
+        OPENAI_API_KEY=<your_openai_api_key>
+        GCS_BUCKET_NAME=enterprisegpt_bucket
+        CHROMA_SERVER_HOST=<internal_chroma_VM_ip>
+        CHROMA_SERVER_PORT=8001
+        PROJECT_ID=<your_project_id>
+        DATASET="enterprisegpt"
+        TABLE="employee_data"
+      ```
+    - Setup as a System Service
+      ```bash
+      sudo vi /etc/systemd/system/chroma.service
+      ```
+
+      Add configu ration (adjust paths for your user name):
+      ```ini
+        [Unit]
+        Description=Chroma Vector Database Service
+        After=network.target
+
+        [Service]
+        Type=simple
+        User=<username>
+        WorkingDirectory=/opt/chroma
+
+        ExecStart=/opt/chroma/venv/bin/chroma run \
+          --host 0.0.0.0 \
+          --port 8001 \
+          --path /var/lib/chroma
+
+        Restart=always
+        RestartSec=5
+        Environment=PYTHONUNBUFFERED=1
+
+        StandardOutput=journal
+        StandardError=journal
+
+        [Install]
+        WantedBy=multi-user.target
+      ```
+
+    - Check the permissions:
+      ```bash
+        sudo -u <username> ls /opt/chroma
+        sudo -u <username> ls /var/lib/chroma
+      ```
+    - Start the service:
+      ```bash
+        sudo systemctl daemon-reexec
+        sudo systemctl daemon-reload
+        sudo systemctl start chroma
+        sudo systemctl enable chroma
+        sudo systemctl status chroma
+      ```
+
+
 
 
 ### Chroma Service Management
