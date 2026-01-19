@@ -302,8 +302,8 @@ Below are the steps to setup the enviroment and run the codes:
       ```
       
     -  Copy configuration in the opened file:
-      ```bash
-      server {
+      ```ini
+        server {
           listen 80;
           server_name _;
           
@@ -375,12 +375,13 @@ Below are the steps to setup the enviroment and run the codes:
       DATASET="enterprisegpt"
       TABLE="employee_data"
       ```
+      
     - Setup as a System Service
       ```bash
       sudo vi /etc/systemd/system/chroma.service
       ```
 
-      Add configu ration (adjust paths for your user name):
+      Add configuration (adjust paths for your user name):
       ```ini
       [Unit]
       Description=Chroma Vector Database Service
