@@ -46,14 +46,67 @@ For the last few years, I have been part of a great learning curve wherein I hav
 - [ChromaDB](https://www.trychroma.com/)
 - [BigQuery](https://cloud.google.com/bigquery)
 - [Google Cloud Storage](https://cloud.google.com/storage)
+- [LangChain](https://www.langchain.com/)
+- [OpenAI](https://openai.com/)
+- [React JS](https://reactjs.org/)
+- [Vanilla CSS](https://developer.mozilla.org/en-US/docs/Web/CSS)
+
+## Cloning Repository
+
+```bash
+    # clone this repo:
+    git clone https://github.com/adityasolanki205/EnterpriseGPT.git
+```
+
+## Initial Setup
+
+Below are the steps to setup the enviroment and run the codes:
+ 
+1. **Setup**: First we will have to setup free google cloud account which can be done [here](https://cloud.google.com/free).
+
+2. **IDE Setup**: Download Antigravity from [here](https://antigravity.google/)
+
+3. **Prototype (Optional)**: A Quick prototype can be created [here](https://aistudio.google.com/apps)
+
+## Cloud infrastructure setup:
+
+1. Goto **Google Compute Engine** and use below configuraiton to create 2 Virtual machines:
+
+  - **VM 1**: For **Backend**
+    - **Name**: enterprisegpt-backend
+    - **Region**: asia-south2
+    - **Machine type**: e2-medium
+    - **Operating system**: Debian 11
+    - **Data Protection**: No Backups
+    - **Disk size**: 20 GB
+    - **Firewall**: Allow HTTP and HTTPS traffic
+    - **Security**: Allow full access to all Cloud APIs
+    - **Automation**:
+      ```bash
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install -y python3-pip python3-venv nodejs npm nginx git
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt install -y nodejs
+      ```
+  
+  - **VM 2**: For **ChromaDB**
+    - **Name**: enterprisegpt-chromadb
+    - **Region**: asia-south2
+    - **Machine type**: e2-medium
+    - **Operating system**: Debian 11
+    - **Data Protection**: No Backups
+    - **Disk size**: 20 GB
+    - **Firewall**: Allow HTTP and HTTPS traffic
+    - **Security**: Allow full access to all Cloud APIs
+    - **Automation**:
+      ```bash
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install -y python3-pip python3-venv nodejs npm nginx git
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt install -y nodejs
+      ```
 
 
-
-## 🗄️ Vector Database (Chroma)
-
-- Runs on a **separate Debian VM**
-- Deployed as a **systemd service**
-- Accessed via HTTP from backend
 
 ### Chroma Service Management
 
