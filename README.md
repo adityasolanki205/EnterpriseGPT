@@ -17,59 +17,37 @@ It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise da
 
 ![EnterpriseGPT](https://github.com/user-attachments/assets/f9e512e1-949a-4969-b343-2fe6e10a6ddf)
 
-```
-Frontend (Vue / React)
-|
-v
-FastAPI Backend (EnterpriseGPT)
-|
-├── BigQuery (Structured Data)
-│ └── Employee status (bench / active)
-|
-├── Chroma Vector DB (Separate VM)
-│ ├── Resume embeddings
-│ └── Policy embeddings
-|
-├── Google Cloud Storage (GCS)
-│ └── Resume & policy documents
-|
-└── OpenAI / LLM
-└── Reasoning & summarization
-```
+1. **Types of Users** 
+    - There are 2 types of Users. **Admin** and **Employee**.
+    - **Admin** can upload resumes and policies.
+    - **Employee** can ask questions to the chatbot.
+      
+2. **Application UI** 
+    - The UI is built using **AntiGravity IDE** from **Google** using Vibe Coding.
+    - It has two interfaces. **HR Portal** and **Employee Portal**.
+    - Frontend stack used includes **React JS** and **Vanilla CSS**.
+      
+3. **Cloud Infrastructure**
+    - The **backend** is built using **FastAPI** and is deployed on a **Debian VM** and is accessed via **HTTP**.
+    - The **Vector database** uses **ChromaDB** for **vector search** and **metadata storage** deployed on separate **Debian VM**.
+    - The **structured data storage** uses **BigQuery**.
+    - The **file storage** uses **Google Cloud Storage**.
+    - The **Orchestration** uses **LangChain**.
+    - The **LLM** uses **OpenAI**.
+      
+## Motivation
+For the last few years, I have been part of a great learning curve wherein I have upskilled myself to move into a Machine Learning and Cloud Computing. This project was practice project for all the learnings I have had. This is first of the many more to come.
 
-## 🧠 Data Ownership Model
+## Libraries/frameworks used
 
-| Data Type | Source of Truth |
-|----------|----------------|
-Employee bench/active status | BigQuery |
-Employee basic details | BigQuery |
-Resume text & embeddings | Chroma |
-Resume download links | GCS |
-Policy documents | Chroma |
-Summaries & reasoning | LLM |
+<b>Built with</b>
+- [Python](https://www.python.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [ChromaDB](https://www.trychroma.com/)
+- [BigQuery](https://cloud.google.com/bigquery)
+- [Google Cloud Storage](https://cloud.google.com/storage)
 
-> ❗ Structured data is **never** derived from LLMs.
 
-```
-EnterpriseGPT/
-├── backend/
-│ ├── main.py
-│ ├── chroma_client.py
-│ ├── requirements.txt
-│ ├── venv/
-│ └── uploaded_docs/
-│
-├── frontend/
-│ ├── src/
-│ ├── build/
-│ └── package.json
-│
-├── chroma/
-│ ├── chroma.service
-│ └── data/ # /var/lib/chroma on VM
-│
-└── README.md
-```
 
 ## 🗄️ Vector Database (Chroma)
 
