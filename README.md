@@ -65,7 +65,7 @@ Below are the steps to setup the enviroment and run the codes:
  
 1. **Setup**: First we will have to setup free google cloud account which can be done [here](https://cloud.google.com/free).
 
-2. **IDE Setup**: Download Antigravity from [here](https://antigravity.google/). This is only required if any changes are required.
+2. **IDE Setup**: Download Antigravity from [here](https://antigravity.google/). This is only required if any changes are needed.
 
 3. **Prototype (Optional)**: A Quick prototype can be created [here](https://aistudio.google.com/apps)
 
@@ -227,6 +227,42 @@ Below are the steps to setup the enviroment and run the codes:
               CURRENT_DATE()
           );
       ```
+
+## Application setup:
+
+1. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup application:
+    - Clone the repo using 
+    ```bash
+      git clone https://github.com/adityasolanki205/EnterpriseGPT.git
+    ```
+
+    - Goto the cloned repo
+    ```bash
+      cd EnterpriseGPT
+    ```
+
+    - Create a virtual environment and activate it
+    ```bash
+      python3 -m venv venv
+      source venv/bin/activate
+    ```
+
+    - Install the required dependencies
+    ```bash
+      pip install -r requirements.txt
+      python -m spacy download en_core_web_sm
+    ```
+
+    - Set the environment variables
+    ```bash
+      export CHROMA_API_KEY=your_chroma_api_key
+      export CHROMA_API_SECRET=your_chroma_api_secret
+    ```
+    
+    - Run the application
+    ```bash
+      python app.py
+    ```
 
 
 ### Chroma Service Management
