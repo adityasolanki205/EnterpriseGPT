@@ -15,7 +15,7 @@ It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise da
 
 ## Architecture Overview
 
-![EnterpriseGPT](https://github.com/user-attachments/assets/24a54f10-df17-4d93-b0ca-68b3b4157f02)
+![EnterpriseGPT](https://github.com/user-attachments/assets/7bb8a27f-9e1a-4cad-bceb-b2711e59327c)
 
 
 1. **Types of Users** 
