@@ -423,42 +423,31 @@ Below are the steps to setup the enviroment and run the codes:
       sudo systemctl status chroma
       ```
 
-4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend VM>**. 
+4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend_VM>**. 
 
 
-### Chroma Service Management
 
-```bash
-sudo systemctl status chroma
-sudo systemctl restart chroma  
-sudo systemctl enable chroma 
-```
+## Application Process flow
 
-📄 Document Ingestion
+1.  Document Ingestion
 Supported Formats
 
-- PDF
+  - PDF (Less Accurate)
+  - DOCX
+  - TXT
 
-- DOCX
+2. Automatic Classification
 
-- TXT
+  2.1 Documents are classified as:
 
-Automatic Classification
+    - Resume
+    - Policy
 
-Documents are classified as:
+  2.2 Classification is based on:
 
-- Resume
-
-- Policy
-
-Classification is based on:
-
-- Structural patterns
-
+    - Structural patterns
 - Keywords
-
 - Entity recognition
-
 - Resume-specific indicators (email, phone, experience)
 
 Metadata Stored in Chroma
