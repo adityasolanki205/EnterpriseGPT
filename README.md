@@ -474,47 +474,33 @@ The Chatbot serves as a unified interface for three distinct retrieval types:
 - `id`, `name`, `department`, `is_on_bench` (BOOL), `project_id`, `allocation_pct`.
 
 
-🌐 API Endpoints
+## API Endpoints
 
-| Endpoint                      | Description                 |
-| ----------------------------- | --------------------------- |
-| `POST /api/chat`              | Main chat endpoint          |
-| `POST /api/process-documents` | Upload resumes and policies |
-| `GET /api/docs`               | Swagger API documentation   |
-| `GET /api/health/chroma`      | Chroma connectivity check   |
+The backend is built with **FastAPI** and exposes the following RESTful endpoints.
 
-🖥️ Frontend
+### 1. Chat & Query Interface
+- **Endpoint**: `POST /api/chat`
+- **Description**: The central entry point for all user interactions. It intelligently routes the user's query to the appropriate engine (SQL generation vs. Vector RAG) based on intent classification.
+- **Parameters**:
+  - `message` (Form Data): The natural language question from the user.
+  - `portal` (Form Data): Context identifier (e.g., 'HR' or 'Employee').
+- **Returns**: A JSON object containing the answer text or a structured table for bench employees.
 
-- Built using Vue or React
+### 2. Document Processing
+- **Endpoint**: `POST /api/process-documents`
+- **Description**: Handles the ingestion of raw documents (PDF, DOCX, TXT).
+- **Process**:
+  1. **Upload**: Saves file to server.
+  2. **Classify**: Determines if it's a Resume or Policy.
+  3. **Cloud Storage**: Uploads original to Google Cloud Storage.
+  4. **Vectorize**: Generates embeddings and stores them in ChromaDB with metadata.
 
-- Uses /api/* routes via Nginx reverse proxy
+### 3. System & Health
+- **Endpoint**: `GET /api/docs`
+  - **Description**: Interactive Swagger UI documentation for testing APIs.
+- **Endpoint**: `GET /api/`
+  - **Description**: Health check to verify backend is running.
 
-- Supports:
-
-    - HR Portal
-    - Employee Portal
-    - Resume upload
-    - Bench employee table view
-
-🚀 Deployment
-
-Backend
-```bash
-source venv/bin/activate
-sudo systemctl restart enterprisegpt-backend
-```
-
-Chroma
-```bash
-sudo systemctl restart chroma
-```
-
-Frontend
-```bash
-npm run build
-sudo cp -r build/* /var/www/enterprisegpt/
-sudo systemctl reload nginx
-```
 📌 Final Notes
 
 EnterpriseGPT follows enterprise AI best practices:
