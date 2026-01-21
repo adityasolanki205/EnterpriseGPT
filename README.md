@@ -423,7 +423,7 @@ Below are the steps to setup the enviroment and run the codes:
       sudo systemctl status chroma
       ```
 
-4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://<External IP of enterprisegpt-backend VM>**. 
+4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend VM>**. 
 
 
 ### Chroma Service Management
