@@ -1,7 +1,6 @@
 # EnterpriseGPT
 
-EnterpriseGPT is an **internal AI workspace** designed for an organization.  
-It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise data**, and **vector search** to answer HR, employee, and policy-related questions accurately and securely.
+EnterpriseGPT is an **internal AI workspace** designed for an organization. It combines **Retrieval-Augmented Generation (RAG)**, **structured enterprise data**, and **vector search** to answer HR related questions on employees and policies accurately. You just have to upload the policies or resumes and ask questions, the AI will answer them. It is a **cloud-native** and **GCP-ready** application. 
 
 ## Key Features
 
