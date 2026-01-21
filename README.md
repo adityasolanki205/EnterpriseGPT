@@ -345,7 +345,6 @@ Below are the steps to setup the enviroment and run the codes:
       sudo systemctl restart nginx
       ```
 3. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
-
     - Create required directories and set ownership
       ```bash
       sudo mkdir -p /opt/chroma
@@ -425,66 +424,56 @@ Below are the steps to setup the enviroment and run the codes:
 
 4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend_VM>**. 
 
+## Application Process Descriptions
 
+### 1. Document Ingestion & Classification
+The system supports uploading **PDF, DOCX, and TXT** documents via the HR Portal.
+- **Processing**: Files are saved locally, then text is extracted and chunked.
+- **Classification**: A hybrid heuristic approach (Regex + NLP) classifies documents:
+  - **Resume**: Identified by email/phone patterns, "Experience" sections, and Person entities.
+  - **Policy**: Identified by governance keywords ("Scope", "Compliance") and modal verbs.
+- **Storage**:
+  - Original files are uploaded to **Google Cloud Storage (GCS)**.
+  - Text embeddings and metadata are stored in **ChromaDB**.
 
-## Application Process flow
+### 2. Chat & RAG Workflow
+The Chatbot serves as a unified interface for three distinct retrieval types:
 
-1.  Document Ingestion
-Supported Formats
+#### A. Structured Data Query (Bench Analytics)
+*Triggered by questions like "Who is on bench?" or "unallocated employees"*
+1. **NL-to-SQL**: LLM converts the user's question into a BigQuery SQL query.
+2. **Execution**: The query runs against the `employee_data` table in BigQuery.
+3. **Enrichment**: System fetches Resume Links from ChromaDB for the returned employees.
+4. **Response**: A structured table is displayed with employee details and resume download links.
 
-  - PDF (Less Accurate)
-  - DOCX
-  - TXT
+#### B. Resume Specific Chat
+*Triggered by questions containing a specific employee's name*
+1. **Filtering**: Usage of `doc_type: "resume"` filter in Vector Search.
+2. **Extraction**: LLM extracts structured fields (Skills, Summary, Experience) from the resume chunks.
+3. **Response**: A dedicated "Candidate Profile" card is rendered.
 
-2. Automatic Classification
+#### C. Policy Q&A
+*Default workflow for general HR queries*
+1. **Filtering**: Usage of `doc_type: "policy"` filter.
+2. **Retrieval**: Semantic search retrieves relevant policy clauses.
+3. **Response**: LLM generates a grounded answer citing the policy content.
 
-  2.1 Documents are classified as:
+### 3. Data Schema
 
-    - Resume
-    - Policy
-
-  2.2 Classification is based on:
-
-    - Structural patterns
-- Keywords
-- Entity recognition
-- Resume-specific indicators (email, phone, experience)
-
-Metadata Stored in Chroma
+**ChromaDB Metadata**:
 ```json
 {
-  "doc_type": "resume",
-  "employee_id": "E123",
-  "employee_name": "Aditya Solanki",
-  "resume_url": "https://storage.googleapis.com/..."
+  "doc_type": "resume",      // or "policy"
+  "employee_name": "Name",   // Extracted from filename
+  "gcs_link": "https://...", // Link to file in GCS
+  "source_file": "filename"
 }
 ```
-👥 Bench Employee Workflow
 
-Execution Flow
+**BigQuery Schema (Employee Data)**:
+- `id`, `name`, `department`, `is_on_bench` (BOOL), `project_id`, `allocation_pct`.
 
-1. Fetch bench employees from BigQuery
 
-2. Fetch resume metadata from Chroma
-
-3. Generate summaries using LLM
-
-4. Return structured JSON to frontend
-
-```json 
-{
-  "type": "bench_employee_list",
-  "count": 2,
-  "data": [
-    {
-      "employee_name": "Aditya Solanki",
-      "department": "Engineering",
-      "resume_url": "https://storage.googleapis.com/...",
-      "resume_summary": "Backend engineer with experience in Python and GCP."
-    }
-  ]
-}
-```
 🌐 API Endpoints
 
 | Endpoint                      | Description                 |
@@ -534,4 +523,3 @@ EnterpriseGPT follows enterprise AI best practices:
 - Clear data ownership
 - Scalable and auditable architecture
 - Cloud-native design
-
