@@ -275,10 +275,10 @@ Below are the steps to setup the enviroment and run the codes:
       After=network.target
 
       [Service]
-      User=<username>
-      WorkingDirectory=/home/<username>/EnterpriseGPT/backend
-      EnvironmentFile=/home/<username>/EnterpriseGPT/.env
-      ExecStart=/home/<username>/EnterpriseGPT/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+      User=aditya_solanki205
+      WorkingDirectory=/home/aditya_solanki205/EnterpriseGPT/backend
+      EnvironmentFile=/home/aditya_solanki205/EnterpriseGPT/.env
+      ExecStart=/home/aditya_solanki205/EnterpriseGPT/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
       Restart=always
 
       [Install]
@@ -349,11 +349,12 @@ Below are the steps to setup the enviroment and run the codes:
       ```bash
       sudo mkdir -p /opt/chroma
       sudo mkdir -p /var/lib/chroma
-      sudo chown -R <username>:<username> /opt/chroma /var/lib/chroma        
+      sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma        
       ```
 
     - Create a virtual environment and activate it
       ```bash
+      cd /opt/chroma
       python3 -m venv venv
       source venv/bin/activate
       ```
@@ -363,18 +364,7 @@ Below are the steps to setup the enviroment and run the codes:
       pip install --upgrade pip
       pip install chromadb
       ```
-
-    - Set the environment variables at **/EnterpriseGPT/.env**
-      ```bash
-      OPENAI_API_KEY=<your_openai_api_key>
-      GCS_BUCKET_NAME=enterprisegpt_bucket
-      CHROMA_SERVER_HOST=<internal_chroma_VM_ip>
-      CHROMA_SERVER_PORT=8001
-      PROJECT_ID=<your_project_id>
-      DATASET="enterprisegpt"
-      TABLE="employee_data"
-      ```
-      
+    
     - Setup as a System Service
       ```bash
       sudo vi /etc/systemd/system/chroma.service
@@ -388,7 +378,7 @@ Below are the steps to setup the enviroment and run the codes:
 
       [Service]
       Type=simple
-      User=<username>
+      User=aditya_solanki205
       WorkingDirectory=/opt/chroma
 
       ExecStart=/opt/chroma/venv/bin/chroma run \
@@ -409,8 +399,8 @@ Below are the steps to setup the enviroment and run the codes:
 
     - Check the permissions:
       ```bash
-      sudo -u <username> ls /opt/chroma
-      sudo -u <username> ls /var/lib/chroma
+      sudo -u aditya_solanki205 ls /opt/chroma
+      sudo -u aditya_solanki205 ls /var/lib/chroma
       ```
 
     - Start the service:
