@@ -72,8 +72,8 @@ Below are the steps to setup the enviroment and run the codes:
 
 1. Goto **Google Compute Engine** and use below configuraiton to create 2 Virtual machines:
 
-  - **VM 1**: For **Backend**
-    - **Name**: enterprisegpt-backend
+  - **VM 1**: For **Application frontend and backend**
+    - **Name**: enterprisegpt-app
     - **Region**: asia-south2
     - **Machine type**: e2-medium
     - **Operating system**: Debian 11
@@ -482,8 +482,8 @@ The backend is built with **FastAPI** and exposes the following RESTful endpoint
 - **Endpoint**: `POST /api/chat`
 - **Description**: The central entry point for all user interactions. It intelligently routes the user's query to the appropriate engine (SQL generation vs. Vector RAG) based on intent classification.
 - **Parameters**:
-  - `message` (Form Data): The natural language question from the user.
-  - `portal` (Form Data): Context identifier (e.g., 'HR' or 'Employee').
+  - `message` (From Data): The natural language question from the user.
+  - `portal` (From Data): Context identifier (e.g., 'HR' or 'Employee').
 - **Returns**: A JSON object containing the answer text or a structured table for bench employees.
 
 ### 2. Document Processing
