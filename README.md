@@ -64,7 +64,7 @@ Below are the steps to setup the enviroment and run the codes:
  
 1. **Setup**: First we will have to setup free google cloud account which can be done [here](https://cloud.google.com/free).
 
-2. **IDE Setup**: Download Antigravity from [here](https://antigravity.google/). This is only required if any changes are needed.
+2. **IDE Setup**: Download Antigravity from [here](https://antigravity.google/). This is only need if you want to make any changes in the code.
 
 3. **Prototype (Optional)**: A Quick prototype can be created [here](https://aistudio.google.com/apps)
 
