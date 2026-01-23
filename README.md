@@ -287,7 +287,6 @@ Below are the steps to setup the enviroment and run the codes:
 
     - Start the service:
       ```bash
-      sudo systemctl daemon-reexec
       sudo systemctl daemon-reload
       sudo systemctl start enterprisegpt-backend
       sudo systemctl enable enterprisegpt-backend
