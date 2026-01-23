@@ -293,7 +293,30 @@ Below are the steps to setup the enviroment and run the codes:
       sudo systemctl enable enterprisegpt-backend
       sudo systemctl status enterprisegpt-backend
       ```
+    
+    - Note In case the backend server has to be restarted, use below commands:
+      ```bash
+      sudo systemctl stop enterprisegpt-backend
+      sudo systemctl status enterprisegpt-backend
+      sudo systemctl daemon-reexec
+      sudo systemctl daemon-reload
+      sudo systemctl start enterprisegpt-backend
+      sudo systemctl status enterprisegpt-backend
+      ```
 2. Now lets setup **Frontend**. Follow below steps to setup React application:
+
+    - Create the frontend
+      ```bash
+      cd ../frontend
+      npm install
+      npm run build
+      ```
+
+    - Deploy Static Files to Nginx 
+      ```bash
+      sudo mkdir -p /var/www/enterprisegpt
+      sudo cp -r dist/* /var/www/enterprisegpt/
+      ```
 
     - Setup as a System Service
       ```bash
@@ -342,6 +365,12 @@ Below are the steps to setup the enviroment and run the codes:
       sudo rm /etc/nginx/sites-enabled/default
       sudo nginx -t
       sudo systemctl restart nginx
+      ```
+    
+    - Note In case the Frontend server has to be restarted, use below commands:
+      ```bash
+      sudo nginx -t
+      sudo systemctl reload nginx
       ```
       
 3. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
@@ -405,7 +434,6 @@ Below are the steps to setup the enviroment and run the codes:
 
     - Start the service:
       ```bash
-      sudo systemctl daemon-reexec
       sudo systemctl daemon-reload
       sudo systemctl start chroma
       sudo systemctl enable chroma
