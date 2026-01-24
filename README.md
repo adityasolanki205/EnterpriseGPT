@@ -14,25 +14,25 @@ EnterpriseGPT is an **internal AI workspace** designed for an organization. It c
 
 #### ***Demo Videos***
 
-1. **Part 1**: Policy Related question and Answers
+- **Part 1**: Policy Related question and Answers
 
 
 https://github.com/user-attachments/assets/2461e15e-c98e-4c00-a1aa-414dd3c101ec
 
 
-2. **Part 2**: Resume Related question and Answers
+- **Part 2**: Resume Related question and Answers
 
 
 https://github.com/user-attachments/assets/7aac4f61-4b69-4978-8e01-75128b7fd92e
 
 
-3. **Part 3**: Complex Question and Answers on Policies 
+- **Part 3**: Complex Question and Answers on Policies 
 
 
 https://github.com/user-attachments/assets/9e3b666c-4265-4835-b2db-a0dd8af12eb3
 
 
-4. **Part 4**: Bench Employee Identification
+- **Part 4**: Bench Employee Identification
 
 
 https://github.com/user-attachments/assets/c3e64bfd-a8a7-48da-8873-3057e4c65a18
