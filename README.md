@@ -116,6 +116,10 @@ Below are the steps to setup the enviroment and run the codes:
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt install -y nodejs
       ```
+#### ***Demo Video***
+
+https://github.com/user-attachments/assets/f67fd5e4-5e2d-4f53-a03d-c611c7735bc2
+
   
   - **VM 2**: For **ChromaDB**
     - **Name**: enterprisegpt-chromadb
@@ -133,6 +137,9 @@ Below are the steps to setup the enviroment and run the codes:
         curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
         sudo apt install -y nodejs
       ```
+#### ***Demo Video***
+
+https://github.com/user-attachments/assets/47636ede-770b-4429-b495-8f6ff10d72ce
 
 2. Goto **Google Cloud Storage** and use below configuraiton to create 1 bucket:
     - **Name**: enterprisegpt-bucket
