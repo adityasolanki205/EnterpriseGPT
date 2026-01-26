@@ -205,11 +205,6 @@ https://github.com/user-attachments/assets/d01f6f1a-510d-485d-ba48-e49d44dac825
             }
           ]
       ```
-#### ***Demo Video***
-
-
-https://github.com/user-attachments/assets/57c5685a-50e8-45f3-9123-a621768f4c88
-
 
     - **Sample Data**:
       ```sql
@@ -273,6 +268,11 @@ https://github.com/user-attachments/assets/57c5685a-50e8-45f3-9123-a621768f4c88
               CURRENT_DATE()
           );
       ```
+#### ***Demo Video***
+
+
+https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
+
 
 ## Application setup:
 
