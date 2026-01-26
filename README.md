@@ -147,6 +147,12 @@ https://github.com/user-attachments/assets/47636ede-770b-4429-b495-8f6ff10d72ce
     - **Storage class**: Standard
     - **Access**: Public access to allUsers
 
+#### ***Demo Video***
+
+
+https://github.com/user-attachments/assets/d01f6f1a-510d-485d-ba48-e49d44dac825
+
+
 3. Goto **Google bigquery** and use below configuraiton to create 1 dataset:
     - **Name**: enterprisegpt-dataset
     - **Region**: asia-south2
@@ -199,6 +205,12 @@ https://github.com/user-attachments/assets/47636ede-770b-4429-b495-8f6ff10d72ce
             }
           ]
       ```
+#### ***Demo Video***
+
+
+https://github.com/user-attachments/assets/57c5685a-50e8-45f3-9123-a621768f4c88
+
+
     - **Sample Data**:
       ```sql
       INSERT INTO `<project_name>.enterprisegpt.employee_data`
