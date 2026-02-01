@@ -342,6 +342,16 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       sudo systemctl enable chroma
       sudo systemctl status chroma
       ```
+      
+#### ***Demo Video***
+
+https://github.com/user-attachments/assets/a72819eb-0047-4c58-b5af-f1c13d8042fd
+
+
+
+https://github.com/user-attachments/assets/45f4697e-bdf3-47fa-b50b-18a5288bb10f
+
+
 
 2. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup fastapi application:
     - Clone the repo using 
@@ -416,6 +426,16 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       sudo systemctl start enterprisegpt-backend
       sudo systemctl status enterprisegpt-backend
       ```
+      
+#### ***Demo Video***
+
+https://github.com/user-attachments/assets/ac4bff39-52e7-445f-bc71-1733369ca42b
+
+
+https://github.com/user-attachments/assets/15fa7378-560e-40b9-8b6e-2bda67056ed4
+
+
+
 3. Now lets setup **Frontend**. Follow below steps to setup React application:
 
     - Create the frontend
@@ -486,9 +506,20 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       sudo systemctl reload nginx
       ```
       
+#### ***Demo Video***
+
+
+https://github.com/user-attachments/assets/79c8f000-d54f-4e0e-bfbd-5f0d73e2e9a9
+
 
 
 4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend_VM>**. 
+
+#### ***Demo Video***
+
+
+https://github.com/user-attachments/assets/2ac22272-fad0-436c-9b34-33b6e85aa857
+
 
 ## Application Process Descriptions
 
