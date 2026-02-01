@@ -606,3 +606,7 @@ EnterpriseGPT follows enterprise AI best practices:
 - Clear data ownership
 - Scalable and auditable architecture
 - Cloud-native design
+
+## Credits
+1. Akash Nimare's [README.md](https://gist.github.com/akashnimare/7b065c12d9750578de8e705fb4771d2f#file-readme-md)
+2. Ed Donner's [AI Engineer Core Track: LLM Engineering, RAG, QLoRA, Agents](https://www.udemy.com/course/llm-engineering-master-ai-and-large-language-models/)
