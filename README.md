@@ -276,7 +276,74 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
 
 ## Application setup:
 
-1. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup fastapi application:
+1. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
+    - Create required directories and set ownership
+      ```bash
+      sudo mkdir -p /opt/chroma
+      sudo mkdir -p /var/lib/chroma
+      sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma        
+      ```
+
+    - Create a virtual environment and activate it
+      ```bash
+      cd /opt/chroma
+      python3 -m venv venv
+      source venv/bin/activate
+      ```
+
+    - Install the required dependencies
+      ```bash
+      pip install --upgrade pip
+      pip install chromadb
+      ```
+    
+    - Setup as a System Service
+      ```bash
+      sudo vi /etc/systemd/system/chroma.service
+      ```
+
+      Add configuration (adjust paths for your user name):
+      ```ini
+      [Unit]
+      Description=Chroma Vector Database Service
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=aditya_solanki205
+      WorkingDirectory=/opt/chroma
+
+      ExecStart=/opt/chroma/venv/bin/chroma run \
+        --host 0.0.0.0 \
+        --port 8001 \
+        --path /var/lib/chroma
+
+      Restart=always
+      RestartSec=5
+      Environment=PYTHONUNBUFFERED=1
+
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+      ```
+
+    - Check the permissions:
+      ```bash
+      sudo -u aditya_solanki205 ls /opt/chroma
+      sudo -u aditya_solanki205 ls /var/lib/chroma
+      ```
+
+    - Start the service:
+      ```bash
+      sudo systemctl daemon-reload
+      sudo systemctl start chroma
+      sudo systemctl enable chroma
+      sudo systemctl status chroma
+      ```
+
+2. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup fastapi application:
     - Clone the repo using 
       ```bash
       git clone https://github.com/adityasolanki205/EnterpriseGPT.git
@@ -349,7 +416,7 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       sudo systemctl start enterprisegpt-backend
       sudo systemctl status enterprisegpt-backend
       ```
-2. Now lets setup **Frontend**. Follow below steps to setup React application:
+3. Now lets setup **Frontend**. Follow below steps to setup React application:
 
     - Create the frontend
       ```bash
@@ -419,72 +486,7 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       sudo systemctl reload nginx
       ```
       
-3. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
-    - Create required directories and set ownership
-      ```bash
-      sudo mkdir -p /opt/chroma
-      sudo mkdir -p /var/lib/chroma
-      sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma        
-      ```
 
-    - Create a virtual environment and activate it
-      ```bash
-      cd /opt/chroma
-      python3 -m venv venv
-      source venv/bin/activate
-      ```
-
-    - Install the required dependencies
-      ```bash
-      pip install --upgrade pip
-      pip install chromadb
-      ```
-    
-    - Setup as a System Service
-      ```bash
-      sudo vi /etc/systemd/system/chroma.service
-      ```
-
-      Add configuration (adjust paths for your user name):
-      ```ini
-      [Unit]
-      Description=Chroma Vector Database Service
-      After=network.target
-
-      [Service]
-      Type=simple
-      User=aditya_solanki205
-      WorkingDirectory=/opt/chroma
-
-      ExecStart=/opt/chroma/venv/bin/chroma run \
-        --host 0.0.0.0 \
-        --port 8001 \
-        --path /var/lib/chroma
-
-      Restart=always
-      RestartSec=5
-      Environment=PYTHONUNBUFFERED=1
-
-      StandardOutput=journal
-      StandardError=journal
-
-      [Install]
-      WantedBy=multi-user.target
-      ```
-
-    - Check the permissions:
-      ```bash
-      sudo -u aditya_solanki205 ls /opt/chroma
-      sudo -u aditya_solanki205 ls /var/lib/chroma
-      ```
-
-    - Start the service:
-      ```bash
-      sudo systemctl daemon-reload
-      sudo systemctl start chroma
-      sudo systemctl enable chroma
-      sudo systemctl status chroma
-      ```
 
 4. Goto **enterprisegpt-backend** VM and copy the public URL. Try opening the app using **http://External-IP_of_enterprisegpt-backend_VM>**. 
 
