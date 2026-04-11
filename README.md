@@ -42,8 +42,7 @@ https://github.com/user-attachments/assets/c3e64bfd-a8a7-48da-8873-3057e4c65a18
 
 ## Architecture Overview
 
-![EnterpriseGPT](https://github.com/user-attachments/assets/7bb8a27f-9e1a-4cad-bceb-b2711e59327c)
-
+![EnterpriseGPT](https://github.com/user-attachments/assets/8969a1d1-1077-4bdf-bc5c-f395d3a7eb9a)
 
 1. **Types of Users** 
     - There are 2 types of Users. **Admin** and **Employee**.
