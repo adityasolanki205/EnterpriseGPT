@@ -278,6 +278,9 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
 1. Goto **enterprisegpt-chromadb** VM and click on SSH. Follow below steps to setup chroma service: 
     - Create required directories and set ownership
       ```bash
+      sudo apt update
+      sudo apt install -y git
+      sudo apt install -y python3.11-venv
       sudo mkdir -p /opt/chroma
       sudo mkdir -p /var/lib/chroma
       sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma        
@@ -352,10 +355,14 @@ https://github.com/user-attachments/assets/45f4697e-bdf3-47fa-b50b-18a5288bb10f
 
 
 
-2. Goto **enterprisegpt-backend** VM and click on SSH. Follow below steps to setup fastapi application:
+2. Goto **enterprisegpt-app** VM and click on SSH. Follow below steps to setup fastapi application:
     - Clone the repo using 
       ```bash
+      sudo apt update
+      sudo apt install -y git
+      sudo apt install -y python3.11-venv
       git clone https://github.com/adityasolanki205/EnterpriseGPT.git
+
       ```
 
     - Goto the cloned repo
@@ -442,6 +449,8 @@ https://github.com/user-attachments/assets/15fa7378-560e-40b9-8b6e-2bda67056ed4
       cd ../frontend
       npm install
       npm run build
+      sudo apt update
+      sudo apt install -y nginx
       ```
 
     - Deploy Static Files to Nginx 
