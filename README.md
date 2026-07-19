@@ -280,7 +280,7 @@ https://github.com/user-attachments/assets/fc7f3750-29d8-48db-867c-9ad1b4669e67
       ```bash
       sudo apt update
       sudo apt install -y git
-      sudo apt install -y python3.11-venv
+      sudo apt install python3.13-venv
       sudo mkdir -p /opt/chroma
       sudo mkdir -p /var/lib/chroma
       sudo chown -R aditya_solanki205:aditya_solanki205 /opt/chroma /var/lib/chroma        
@@ -360,7 +360,7 @@ https://github.com/user-attachments/assets/45f4697e-bdf3-47fa-b50b-18a5288bb10f
       ```bash
       sudo apt update
       sudo apt install -y git
-      sudo apt install -y python3.11-venv
+      sudo apt install python3.13-venv
       git clone https://github.com/adityasolanki205/EnterpriseGPT.git
 
       ```
@@ -378,6 +378,7 @@ https://github.com/user-attachments/assets/45f4697e-bdf3-47fa-b50b-18a5288bb10f
 
     - Install the required dependencies
       ```bash
+      pip install spacy
       pip install -r requirements.txt
       python -m spacy download en_core_web_sm
       ```
